@@ -52,6 +52,7 @@
     "mkdirp": "~1.0.4",
     "moment": "~2.25.3",
     "node-cache": "~5.1.0",
+    "node-fetch": "^2.6.0",
     "nprogress": "~0.2.0",
     "open": "~7.0.3",
     "passport": "~0.4.1",

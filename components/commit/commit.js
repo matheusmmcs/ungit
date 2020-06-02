@@ -3,6 +3,7 @@ const md5 = require('blueimp-md5');
 const moment = require('moment');
 const octicons = require('octicons');
 const components = require('ungit-components');
+const config = require('../../utils/config.json');
 
 components.register('commit', (args) => new CommitViewModel(args));
 
@@ -30,6 +31,17 @@ class CommitViewModel {
     this.numberOfAddedLines = ko.observable();
     this.numberOfRemovedLines = ko.observable();
     this.authorGravatar = ko.computed(() => md5((this.authorEmail() || '').trim().toLowerCase()));
+
+    this.titleSinapse = ko.computed(
+      () => {
+        let title = this.title()
+        const re = /(.*)#(\d+)(.*)/;
+        let containsRe = title ? title.match(re) : false;
+        return !containsRe ? title : title.replace(re, function(expression, n1, n2, n3){
+          return `${n1}<a href="${config.sinapseUrl}issues/${n2}" target="blank">#${n2}</a>${n3}`;
+        })
+      }
+    );
 
     this.showCommitDiff = ko.computed(
       () => this.fileLineDiffs() && this.fileLineDiffs().length > 0
@@ -87,6 +99,11 @@ class CommitViewModel {
   }
 
   stopClickPropagation(data, event) {
-    event.stopImmediatePropagation();
+    if (event.target.nodeName == 'A') {
+      var win = window.open(event.target.href, '_blank');
+      win.focus();
+    } else {
+      event.stopImmediatePropagation();
+    }
   }
 }

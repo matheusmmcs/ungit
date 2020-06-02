@@ -1,6 +1,6 @@
 const getEdgeModelWithD = (d, stroke, strokeWidth, strokeDasharray, markerEnd) => ({
   d,
-  stroke: stroke ? stroke : '#4A4A4A',
+  stroke: stroke ? stroke : '#19213c',
   strokeWidth: strokeWidth ? strokeWidth : '8',
   strokeDasharray: strokeDasharray ? strokeDasharray : '10, 5',
   markerEnd: markerEnd ? markerEnd : '',

@@ -18,6 +18,14 @@
     </div>
     <div class="row" data-bind="visible: !showNux()">
       <div class="col-lg-3">
+        <div>
+          <button
+            class="btn btn-warning commit-btn" style="margin: 0 auto 10px;"
+            data-bind="click: generateTitleCommit, enable: canGenerateTitleCommit()"
+          >
+            Generate Redmine Title
+          </button>
+        </div>
         <input
           class="form-control"
           type="text"

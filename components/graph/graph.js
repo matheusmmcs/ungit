@@ -29,7 +29,7 @@ class GraphViewModel {
     );
     this.HEADref = ko.observable();
     this.HEAD = ko.computed(() => (this.HEADref() ? this.HEADref().node() : undefined));
-    this.commitNodeColor = ko.computed(() => (this.HEAD() ? this.HEAD().color() : '#4A4A4A'));
+    this.commitNodeColor = ko.computed(() => (this.HEAD() ? this.HEAD().color() : '#19213c'));
     this.commitNodeEdge = ko.computed(() => {
       if (!this.HEAD() || !this.HEAD().cx() || !this.HEAD().cy()) return;
       return `M 610 68 L ${this.HEAD().cx()} ${this.HEAD().cy()}`;
