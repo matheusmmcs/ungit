@@ -131,7 +131,7 @@ class StagingViewModel {
       }).then(function (data) {
         try {
           const tracker = data.issue.tracker.name.toUpperCase();
-          const commitTitle = tracker.includes("SUSTENTA") ? 'BugFix' : tracker.includes("SUSTENTA") ? 'Custom' : tracker.includes("DIRETA EM BD") ? 'OperDB' : 'Commit';
+          const commitTitle = tracker.includes("SUSTENTA") ? 'BugFix' : tracker.includes("CUSTOMIZ") ? 'Custom' : tracker.includes("DIRETA EM BD") ? 'OperDB' : 'Commit';
           _this.commitMessageTitle(`${commitTitle} #${data.issue.id} - ${data.issue.subject}`);
         } catch(e) {
           console.error(e);

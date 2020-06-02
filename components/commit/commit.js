@@ -34,12 +34,22 @@ class CommitViewModel {
 
     this.titleSinapse = ko.computed(
       () => {
-        let title = this.title()
+        const limitTitle = 72;
+        let title = this.title() != null ? this.title() : '';
         const re = /(.*)#(\d+)(.*)/;
         let containsRe = title ? title.match(re) : false;
-        return !containsRe ? title : title.replace(re, function(expression, n1, n2, n3){
-          return `${n1}<a href="${config.sinapseUrl}issues/${n2}" target="blank">#${n2}</a>${n3}`;
-        })
+        if (containsRe) {
+          let link = '', number = '';
+          let titleRep = title.replace(re, function(expression, n1, n2, n3){
+            number = n2;
+            link = `<a href="${config.sinapseUrl}issues/${number}" target="blank">#${number}</a>`;
+            return `${n1}${link}${n3}`;
+          });
+          console.log()
+          return title.length > limitTitle ? titleRep.substring(0, limitTitle + link.length - number.length) + '...' : titleRep;
+        } else {
+          return title.length > limitTitle ? title.substring(0, limitTitle) + '...' : title;
+        }
       }
     );
 
