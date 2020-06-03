@@ -50,7 +50,7 @@ const defaultConfig = {
   launchBrowser: true,
 
   // Instead of launching ungit with the current folder force a different path to be used. Can be set to null to force the home screen.
-  forcedLaunchPath: undefined,
+  forcedLaunchPath: null,
 
   // Closes the server after x ms of inactivity. Mainly used by the clicktesting.
   autoShutdownTimeout: undefined,
