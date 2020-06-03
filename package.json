@@ -2,7 +2,7 @@
   "name": "ungit",
   "author": "Fredrik Norén <fredrik.jw.noren@gmail.com>",
   "description": "Git made easy",
-  "version": "1.5.7",
+  "version": "1.5.7-sti-0.1",
   "ungitPluginApiVersion": "0.2.0",
   "scripts": {
     "start": "node ./bin/ungit",
@@ -16,7 +16,10 @@
     "build": "node ./scripts/build.js",
     "watch": "nodemon -C --exec \"npm run build\" -e js,less -w public/source -w public/less -w components/ -i \"*.bundle.js\"",
     "bumpdependencies": "ncu --upgrade",
-    "electronpackage": "node ./scripts/electronpackage.js",
+    "electronpackage": "node ./scripts/electronpackage.js --platform=darwin --arch=x64 && node ./scripts/electronpackage.js --platform=linux --arch=x64 && node ./scripts/electronpackage.js --platform=win32 --arch=ia32",
+    "electronpackage-mac": "node ./scripts/electronpackage.js --platform=darwin --arch=x64",
+    "electronpackage-win": "node ./scripts/electronpackage.js --platform=win32 --arch=ia32",
+    "electronpackage-linux": "node ./scripts/electronpackage.js --platform=linux --arch=x64",
     "electronzip": "node ./scripts/electronzip.js",
     "travisnpmpublish": "node ./scripts/travisnpmpublish.js"
   },
