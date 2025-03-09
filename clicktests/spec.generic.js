@@ -3,9 +3,8 @@ const environment = require('./environment')({
   serverStartupOptions: ['--no-disableDiscardWarning'],
   rootPath: '/deep/root/path/to/app',
 });
-const mkdirp = require('mkdirp');
-const util = require('util');
-const rimraf = util.promisify(require('rimraf'));
+const mkdirp = require('mkdirp').mkdirp;
+const rimraf = require('rimraf').rimraf;
 const testRepoPaths = [];
 
 const changeTestFile = async (filename, repoPath) => {
@@ -13,20 +12,18 @@ const changeTestFile = async (filename, repoPath) => {
     file: filename,
     path: repoPath,
   });
-};
-const checkout = async (branch) => {
-  await environment.click(`.branch[data-ta-name="${branch}"]`);
-  await environment.click('[data-ta-action="checkout"]:not([style*="display: none"]) .dropmask');
-  await environment.waitForElementVisible(`.ref.branch[data-ta-name="${branch}"].current`);
+  await environment.ensureRedraw();
 };
 const amendCommit = async () => {
   try {
     await environment.page.waitForSelector('.amend-button', { visible: true, timeout: 2000 });
     await environment.click('.amend-button');
-  } catch (err) {
+  } catch {
     await environment.click('.amend-link');
   }
+  await environment.ensureRedraw();
   await environment.click('.commit-btn');
+  await environment.ensureRedraw();
   await environment.waitForElementHidden('.files .file .btn-default');
 };
 
@@ -40,6 +37,7 @@ describe('[GENERIC]', () => {
     await rimraf(testRepoPaths[1]);
     await mkdirp(testRepoPaths[1]);
   });
+
   after('Environment stop', () => environment.shutdown());
 
   it('Open repo screen', () => {
@@ -72,14 +70,21 @@ describe('[GENERIC]', () => {
   it('Should be able to add a new file to .gitignore', async () => {
     await environment.createTestFile(`${testRepoPaths[0]}/addMeToIgnore.txt`, testRepoPaths[0]);
     await environment.waitForElementVisible('.files .file .btn-default');
+    await environment.page.waitForFunction(
+      'document.querySelectorAll(".files .file .btn-default").length === 1',
+      { polling: 250 }
+    );
     await environment.click('.files button.ignore');
-    await environment.wait(2000);
+    await environment.page.waitForFunction(
+      'document.querySelector(".name.btn.btn-default").innerText.trim() === ".gitignore"'
+    ),
+      { polling: 250 };
     await environment.click('.files button.ignore');
     await environment.waitForElementHidden('.files .file .btn-default');
   });
 
   it('Test showing commit diff between two commits', async () => {
-    await environment.click('[data-ta-clickable="node-clickable-0"]');
+    await environment.clickOnNode('[data-ta-clickable="node-clickable-0"]');
     await environment.waitForElementVisible('.diff-wrapper');
     await environment.click('.commit-diff-filename');
     await environment.waitForElementVisible('.commit-line-diffs');
@@ -97,7 +102,6 @@ describe('[GENERIC]', () => {
 
   it('Test whitespace', async () => {
     await environment.click('.commit-whitespace');
-    await environment.waitForElementVisible('.commit-line-diffs');
     await environment.click('[data-ta-clickable="node-clickable-0"]');
   });
 
@@ -107,27 +111,29 @@ describe('[GENERIC]', () => {
     await environment.click('.files button');
     await environment.waitForElementHidden('[data-ta-container="patch-file"]');
     await environment.click('.files button.discard');
-    await environment.click('.modal-dialog .btn-primary');
+    await environment.awaitAndClick('.modal-dialog .btn-primary');
     await environment.waitForElementHidden('.files .file .btn-default');
   });
 
-  it('Should be possible to create a branch', () => {
-    return environment.createBranch('testbranch');
+  it('Should be possible to create a branch', async () => {
+    await environment.createBranch('testbranch');
   });
 
   it('Should be possible to create and destroy a branch', async () => {
     await environment.createBranch('willbedeleted');
-    await environment.click('.branch[data-ta-name="willbedeleted"]');
+    await environment.clickOnNode('.branch[data-ta-name="willbedeleted"]');
     await environment.click('[data-ta-action="delete"]:not([style*="display: none"]) .dropmask');
-    await environment.click('.modal-dialog .btn-primary');
+    await environment.awaitAndClick('.modal-dialog .btn-primary');
+    await environment.ensureRedraw();
     await environment.waitForElementHidden('.branch[data-ta-name="willbedeleted"]');
   });
 
   it('Should be possible to create and destroy a tag', async () => {
     await environment.createTag('tagwillbedeleted');
-    await environment.click('.graph .ref.tag[data-ta-name="tagwillbedeleted"]');
+    await environment.clickOnNode('.graph .ref.tag[data-ta-name="tagwillbedeleted"]');
     await environment.click('[data-ta-action="delete"]:not([style*="display: none"]) .dropmask');
-    await environment.click('.modal-dialog .btn-primary');
+    await environment.awaitAndClick('.modal-dialog .btn-primary');
+    await environment.ensureRedraw();
     await environment.waitForElementHidden('.graph .ref.tag[data-ta-name="tagwillbedeleted"]');
   });
 
@@ -136,6 +142,7 @@ describe('[GENERIC]', () => {
     await environment.waitForElementVisible('.files .file .btn-default');
     await environment.insert('.staging input.form-control', 'My commit message');
     await environment.click('.commit-btn');
+    await environment.ensureRedraw();
     await environment.waitForElementHidden('.files .file .btn-default');
   });
 
@@ -143,51 +150,56 @@ describe('[GENERIC]', () => {
     await changeTestFile(`${testRepoPaths[0]}/testfile.txt`, testRepoPaths[0]);
     await environment.waitForElementVisible('.files .file .additions');
     await environment.waitForElementVisible('.files .file .deletions');
-
     await environment.click('.files button.discard');
-    await environment.click('.modal-dialog .btn-primary');
+    await environment.awaitAndClick('.modal-dialog .btn-primary');
+    await environment.ensureRedraw();
     await environment.waitForElementHidden('.files .file .btn-default');
   });
 
-  // eslint-disable-next-line mocha/no-skipped-tests
   it.skip('Should be possible to patch a file', async () => {
     await changeTestFile(`${testRepoPaths[0]}/testfile.txt`, testRepoPaths[0]);
     //   .patch('patch')
     environment.waitForElementVisible('.commit');
   });
 
-  it('Checkout a branch', () => {
-    return checkout('testbranch');
+  it('Checkout testbranch with action', async () => {
+    await environment.clickOnNode('.branch[data-ta-name="testbranch"]');
+    await environment.click('[data-ta-action="checkout"]:not([style*="display: none"]) .dropmask');
+    await environment.ensureRedraw();
+    await environment.waitForElementVisible('.ref.branch[data-ta-name="testbranch"].current');
   });
 
   it('Create another commit', async () => {
     await environment.createTestFile(`${testRepoPaths[0]}/testy2.txt`, testRepoPaths[0]);
     await environment.commit('Branch commit');
+    await environment.ensureRedraw();
   });
 
-  it('Rebase', () => {
-    return environment.refAction('testbranch', true, 'rebase');
+  it('Rebase', async () => {
+    await environment.rebaseRefAction('testbranch', true);
   });
 
-  it('Checkout master again', () => {
-    return checkout('master');
+  it('Checkout master with double click', async () => {
+    await environment.click('.branch[data-ta-name="master"]', 2);
+    await environment.waitForElementVisible('.ref.branch[data-ta-name="master"].current');
   });
 
   it('Create yet another commit', async () => {
     await environment.createTestFile(`${testRepoPaths[0]}/testy3.txt`, testRepoPaths[0]);
     await environment.commit('Branch commit');
+    await environment.ensureRedraw();
   });
 
-  it('Merge', () => {
-    return environment.refAction('testbranch', true, 'merge');
+  it('Merge', async () => {
+    await environment.mergeRefAction('testbranch', true);
   });
 
   it('Revert merge', async () => {
-    await environment.click('[data-ta-clickable="node-clickable-0"]');
-    await environment.waitForElementVisible('[data-ta-action="revert"]');
+    await environment.clickOnNode('[data-ta-clickable="node-clickable-0"]');
     await environment.click('[data-ta-action="revert"]');
+    await environment.ensureRedraw();
     await environment.waitForElementVisible(
-      '[data-ta-node-title="Revert \\"Merge branch \'testbranch\'\\""]'
+      '[data-ta-node-title^="Revert \\"Merge branch \'testbranch\'"] .commit-container'
     );
   });
 

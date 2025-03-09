@@ -175,7 +175,7 @@ class GitNodeViewModel extends Animateable {
   showRefSearchForm(obj, event) {
     this.refSearchFormVisible(true);
 
-    const textBox = event.currentTarget.nextElementSibling.firstElementChild; // this may not be the best idea...
+    const textBox = event.currentTarget.parentElement.querySelector('input[type="search"]');
     const $textBox = $(textBox);
 
     if (!$textBox.autocomplete('instance')) {
@@ -202,7 +202,7 @@ class GitNodeViewModel extends Animateable {
           return false;
         },
       });
-      $textBox.focus((event) => {
+      $textBox.on('focus', (event) => {
         $(event.target).autocomplete('search', event.target.value);
       });
       $textBox.autocomplete('search', '');
@@ -251,41 +251,16 @@ class GitNodeViewModel extends Animateable {
   }
 
   toggleSelected() {
-    const beforeThisCR = this.commitComponent.element().getBoundingClientRect();
-    let beforeBelowCR = null;
-    if (this.belowNode) {
-      beforeBelowCR = this.belowNode.commitComponent.element().getBoundingClientRect();
-    }
-
-    let prevSelected = this.graph.currentActionContext();
-    if (!(prevSelected instanceof GitNodeViewModel)) prevSelected = null;
-    const prevSelectedCR = prevSelected
-      ? prevSelected.commitComponent.element().getBoundingClientRect()
-      : null;
     this.selected(!this.selected());
-
-    // If we are deselecting
-    if (!this.selected()) {
-      if (beforeThisCR.top < 0 && beforeBelowCR) {
-        const afterBelowCR = this.belowNode.commitComponent.element().getBoundingClientRect();
-        // If the next node is showing, try to keep it in the screen (no jumping)
-        if (beforeBelowCR.top < window.innerHeight) {
-          window.scrollBy(0, afterBelowCR.top - beforeBelowCR.top);
-          // Otherwise just try to bring them to the middle of the screen
-        } else {
-          window.scrollBy(0, afterBelowCR.top - window.innerHeight / 2);
-        }
-      }
-      // If we are selecting
-    } else {
-      const afterThisCR = this.commitComponent.element().getBoundingClientRect();
+    if (this.selected()) {
+      const commitElement = this.commitComponent.element();
+      const commitRect = commitElement.getBoundingClientRect();
       if (
-        prevSelectedCR &&
-        (prevSelectedCR.top < 0 || prevSelectedCR.top > window.innerHeight) &&
-        afterThisCR.top != beforeThisCR.top
+        commitRect.top <
+          +window.getComputedStyle(document.documentElement).scrollPaddingTop.replace('px', '') ||
+        commitRect.bottom > document.documentElement.clientHeight
       ) {
-        window.scrollBy(0, -(beforeThisCR.top - afterThisCR.top));
-        console.log('Fix');
+        commitElement.scrollIntoView();
       }
     }
     return false;

@@ -1,18 +1,31 @@
-var _ = require('lodash');
 var $ = require('jquery');
 jQuery = $; // this is for old backward compatability of bootrap modules
 var ko = require('knockout');
 var dndPageScroll = require('dnd-page-scroll');
-require('../vendor/js/bootstrap/modal');
-require('../vendor/js/bootstrap/dropdown');
-require('../vendor/js/bootstrap/tooltip');
+require('./bootstrap');
 require('./jquery-ui');
 require('./knockout-bindings');
+const winston = require('winston');
+ungit.logger = winston.createLogger({
+  level: ungit.config.logLevel || 'error',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.colorize(),
+    winston.format.printf((info) => {
+      const splat = info[Symbol.for('splat')];
+      if (splat) {
+        const splatStr = splat.map((arg) => JSON.stringify(arg)).join('\n');
+        return `${info.timestamp} - ${info.level}: ${info.message} ${splatStr}`;
+      }
+      return `${info.timestamp} - ${info.level}: ${info.message}`;
+    })
+  ),
+  transports: [new winston.transports.Console()],
+});
 var components = require('ungit-components');
 var Server = require('./server');
 var programEvents = require('ungit-program-events');
 var navigation = require('ungit-navigation');
-var storage = require('ungit-storage');
 var adBlocker = require('just-detect-adblock');
 
 // Request animation frame polyfill and init tooltips
@@ -21,11 +34,13 @@ var adBlocker = require('just-detect-adblock');
   var vendors = ['ms', 'moz', 'webkit', 'o'];
   for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
     window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
-    window.cancelRequestAnimationFrame = window[vendors[x] + 'CancelRequestAnimationFrame'];
+    window.cancelAnimationFrame =
+      window[vendors[x] + 'CancelAnimationFrame'] ||
+      window[vendors[x] + 'CancelRequestAnimationFrame'];
   }
 
   if (!window.requestAnimationFrame)
-    window.requestAnimationFrame = function (callback, element) {
+    window.requestAnimationFrame = function (callback) {
       var currTime = new Date().getTime();
       var timeToCall = Math.max(0, 16 - (currTime - lastTime));
       var id = window.setTimeout(function () {
@@ -42,87 +57,6 @@ var adBlocker = require('just-detect-adblock');
 
   $(document).tooltip({
     selector: '[data-toggle="tooltip"]',
-  });
-})();
-
-ko.bindingHandlers.autocomplete = {
-  init: (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) => {
-    const setAutoCompleteOptions = (sources) => {
-      $(element)
-        .autocomplete({
-          classes: {
-            'ui-autocomplete': 'dropdown-menu',
-          },
-          source: sources,
-          minLength: 0,
-          messages: {
-            noResults: '',
-            results: () => {},
-          },
-        })
-        .data('ui-autocomplete')._renderItem = function (ul, item) {
-        return $('<li></li>').append($('<a>').text(item.label)).appendTo(ul);
-      };
-    };
-
-    const handleKeyEvent = (event) => {
-      const value = $(element).val();
-      const lastChar = value.slice(-1);
-      if (lastChar == ungit.config.fileSeparator) {
-        // When file separator is entered, list what is in given path, and rest auto complete options
-        server
-          .getPromise('/fs/listDirectories', { term: value })
-          .then((directoryList) => {
-            const currentDir = directoryList.shift();
-            $(element).val(
-              currentDir.endsWith(ungit.config.fileSeparator)
-                ? currentDir
-                : currentDir + ungit.config.fileSeparator
-            );
-            setAutoCompleteOptions(directoryList);
-            $(element).autocomplete('search', value);
-          })
-          .catch((err) => {
-            if (
-              !err.errorSummary.startsWith('ENOENT: no such file or directory') &&
-              err.errorCode !== 'read-dir-failed'
-            ) {
-              throw err;
-            }
-          });
-      } else if (event.keyCode === 13) {
-        // enter key is struck, navigate to the path
-        event.preventDefault();
-        navigation.browseTo(`repository?path=${encodeURIComponent(value)}`);
-      } else if (value === '' && storage.getItem('repositories')) {
-        // if path is emptied out, show save path options
-        const folderNames = JSON.parse(storage.getItem('repositories')).map((value) => {
-          return {
-            value: value,
-            label: value.substring(value.lastIndexOf(ungit.config.fileSeparator) + 1),
-          };
-        });
-        setAutoCompleteOptions(folderNames);
-        $(element).autocomplete('search', '');
-      }
-
-      return true;
-    };
-    ko.utils.registerEventHandler(element, 'keyup', _.debounce(handleKeyEvent, 100));
-  },
-};
-
-// Used to catch when a user was tabbed away and re-visits the page.
-// If fs.watch worked better on Windows (i.e. on subdirectories) we wouldn't need this
-(function detectReActivity() {
-  var lastMoved = Date.now();
-  document.addEventListener('mousemove', function () {
-    // If the user didn't move for 3 sec and then moved again, it's likely it's a tab-back
-    if (Date.now() - lastMoved > 3000) {
-      console.log('Fire change event due to re-activity');
-      programEvents.dispatch({ event: 'working-tree-changed' });
-    }
-    lastMoved = Date.now();
   });
 })();
 
@@ -160,12 +94,17 @@ var app, appContainer, server;
 exports.start = function () {
   server = new Server();
   appContainer = new AppContainerViewModel();
+  ungit.server = server;
   app = components.create('app', { appContainer: appContainer, server: server });
-  programEvents.add(function (event) {
+  ungit.__app = app;
+  programEvents.add(async (event) => {
+    ungit.logger.info(`received event: ${event.event}`);
     if (event.event == 'disconnected' || event.event == 'git-crash-error') {
-      console.error(`ungit crash: ${event.event}`, event.error);
+      console.error(`ungit crash: ${event.event}`, event.error, event.stacktrace);
       const err =
-        event.event == 'disconnected' && adBlocker.isDetected() ? 'adblocker' : event.event;
+        event.event == 'disconnected' && (await adBlocker.detectAnyAdblocker())
+          ? 'adblocker'
+          : event.event;
       appContainer.content(components.create('crash', err));
       windowTitle.crash = true;
       windowTitle.update();
@@ -175,9 +114,7 @@ exports.start = function () {
       windowTitle.update();
     }
 
-    if (app.onProgramEvent) {
-      app.onProgramEvent(event);
-    }
+    app.onProgramEvent(event);
   });
   if (ungit.config.authentication) {
     var authenticationScreen = components.create('login', { server: server });

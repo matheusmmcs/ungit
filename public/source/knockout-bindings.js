@@ -1,5 +1,11 @@
-var $ = require('jquery');
+/* eslint no-unused-vars: "off" */
+
+var _ = require('lodash');
 var ko = require('knockout');
+var $ = require('jquery');
+var { encodePath } = require('ungit-address-parser');
+var navigation = require('ungit-navigation');
+var storage = require('ungit-storage');
 
 ko.bindingHandlers.debug = {
   init: function (element, valueAccessor) {
@@ -152,28 +158,6 @@ ko.bindingHandlers.element = {
   $(window).resize(scrollToEndCheck);
 })();
 
-ko.bindingHandlers.modal = {
-  init: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-    $(element).modal();
-    var value = ko.utils.unwrapObservable(valueAccessor());
-    $(element).on('hidden.bs.modal', function () {
-      // Fire next event to let bootstrap figure out everything with the dom intract
-      // (onclose will most likely result in the dom of the modal being removed)
-      setTimeout(function () {
-        value.onclose.call(viewModel);
-      }, 1);
-    });
-    // Normally we could just remove the dialog by removing it from the viewmodel
-    // so that knockout removes the corresponding dom, but since bootstrap also
-    // creates additional dom we need to use their method for hiding to make sure
-    // everything is cleaned up. Basically this method gives the viewModel a chance
-    // to close itself using the bootstrap method.
-    value.closer.call(viewModel, function () {
-      $(element).modal('hide');
-    });
-  },
-};
-
 // handle focus for this element and all children. only when this element or all of its chlidren have lost focus set the value to false.
 ko.bindingHandlers.hasfocus2 = {
   init: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
@@ -197,5 +181,72 @@ ko.bindingHandlers.hasfocus2 = {
         }
       }, 50);
     }
+  },
+};
+
+ko.bindingHandlers.autocomplete = {
+  init: (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) => {
+    const setAutoCompleteOptions = (sources) => {
+      $(element)
+        .autocomplete({
+          classes: {
+            'ui-autocomplete': 'dropdown-menu',
+          },
+          source: sources,
+          minLength: 0,
+          messages: {
+            noResults: '',
+            results: () => {},
+          },
+        })
+        .data('ui-autocomplete')._renderItem = (ul, item) => {
+        return $('<li></li>').append($('<a>').text(item.label)).appendTo(ul);
+      };
+    };
+
+    const handleKeyEvent = (event) => {
+      const value = $(element).val();
+      const lastChar = value.slice(-1);
+      if (lastChar == ungit.config.fileSeparator) {
+        // When file separator is entered, list what is in given path, and rest auto complete options
+        ungit.server
+          .getPromise('/fs/listDirectories', { term: value })
+          .then((directoryList) => {
+            const currentDir = directoryList.shift();
+            $(element).val(
+              currentDir.endsWith(ungit.config.fileSeparator)
+                ? currentDir
+                : currentDir + ungit.config.fileSeparator
+            );
+            setAutoCompleteOptions(directoryList);
+            $(element).autocomplete('search', value);
+          })
+          .catch((err) => {
+            if (
+              !err.errorSummary.startsWith('ENOENT: no such file or directory') &&
+              err.errorCode !== 'read-dir-failed'
+            ) {
+              throw err;
+            }
+          });
+      } else if (event.keyCode === 13) {
+        // enter key is struck, navigate to the path
+        event.preventDefault();
+        navigation.browseTo(`repository?path=${encodePath(value)}`);
+      } else if (value === '' && storage.getItem('repositories')) {
+        // if path is emptied out, show save path options
+        const folderNames = JSON.parse(storage.getItem('repositories')).map((value) => {
+          return {
+            value: value,
+            label: value.substring(value.lastIndexOf(ungit.config.fileSeparator) + 1),
+          };
+        });
+        setAutoCompleteOptions(folderNames);
+        $(element).autocomplete('search', '');
+      }
+
+      return true;
+    };
+    ko.utils.registerEventHandler(element, 'keyup', _.debounce(handleKeyEvent, 100));
   },
 };

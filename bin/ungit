@@ -2,19 +2,24 @@
 
 const startLaunchTime = Date.now();
 
-// eslint-disable-next-line no-unused-vars -- Imported for side effects
-const winston = require('../source/utils/winston');
 const config = require('../source/config');
-const open = require('open');
+const openPromise = import('open');
 const path = require('path');
 const child_process = require('child_process');
+const { encodePath } = require('../source/address-parser');
 
 const BugTracker = require('../source/bugtracker');
 const bugtracker = new BugTracker('launcher');
 // Fastest way to find out if a port is used or not/i.e. if ungit is running
 const net = require('net');
 const server = net.createServer();
-const cleanExit = () => process.exit();
+let child;
+const cleanExit = () => {
+  if (child) {
+    child.kill('SIGINT');
+  }
+  process.exit();
+};
 
 process.on('SIGINT', cleanExit); // catch ctrl-c
 process.on('SIGTERM', cleanExit); // catch kill
@@ -27,17 +32,19 @@ process.on('uncaughtException', (err) => {
 
 const openUngitBrowser = (pathToNavigateTo) => {
   console.log(`Navigate to ${pathToNavigateTo}`);
-  return open(pathToNavigateTo).catch((err) =>
-    console.log(`failed to navigate to ${pathToNavigateTo}`, err)
-  );
+  return openPromise
+    .then((open) => {
+      return open.default(pathToNavigateTo);
+    })
+    .catch((err) => console.log(`failed to navigate to ${pathToNavigateTo}`, err));
 };
 
 const navigate = () => {
   let url = config.urlBase + ':' + config.port;
   if (config.forcedLaunchPath === undefined) {
-    url += '/#/repository?path=' + encodeURIComponent(process.cwd());
+    url += '/#/repository?path=' + encodePath(process.cwd());
   } else if (config.forcedLaunchPath !== null && config.forcedLaunchPath !== '') {
-    url += '/#/repository?path=' + encodeURIComponent(config.forcedLaunchPath);
+    url += '/#/repository?path=' + encodePath(config.forcedLaunchPath);
   }
 
   if (config.launchCommand) {
@@ -58,10 +65,10 @@ const navigate = () => {
 };
 
 const launch = () => {
-  const child = child_process.spawn(
-    process.argv[0], // because it's `nodejs` in some OS
-    [path.join(__dirname, '..', 'source', 'server.js')].concat(process.argv.slice(2)),
-    { cwd: path.join(process.cwd(), '..') }
+  child = child_process.fork(
+    path.join(__dirname, '..', 'source', 'server.js'),
+    process.argv.slice(2),
+    { cwd: path.join(process.cwd(), '..'), silent: true }
   );
 
   child.on('exit', (res) => {
@@ -83,12 +90,15 @@ const launch = () => {
   child.stderr.on('data', (data) => console.log(`stderr: ${data.toString().trim()}`));
 };
 
-server.listen(config.port, config.ungitBindIp, (err) => {
+server.listen({ port: config.port, host: config.ungitBindIp }, (err) => {
   server.close(launch);
 });
 server.on('error', (e) => {
   if (e.code == 'EADDRINUSE') {
     console.log('Ungit server already running');
     navigate();
+  } else {
+    console.error('Failed to run server: ', e);
+    process.exit(1);
   }
 });
