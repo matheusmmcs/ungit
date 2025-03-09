@@ -1,17 +1,23 @@
 skip_branch_with_pr: true
+image: Visual Studio 2022
 
 environment:
   matrix:
     - nodejs_version: '' # latest
-    - nodejs_version: '12'
-    - nodejs_version: '10'
+    - nodejs_version: '20'
+    - nodejs_version: '18'
 
 branches:
   only:
     - master
 
 install:
-  - ps: Install-Product node $env:nodejs_version
+  - ps: |
+      try {
+        Install-Product node $env:nodejs_version
+      } catch {
+        Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version)
+      }
   - node --version
   - npm --version
   - npm ci
@@ -23,6 +29,7 @@ build_script:
 before_test:
   - git config --global user.email "test@testy.com"
   - git config --global user.name "Test testy"
+  - git config --global protocol.file.allow always # tests use file based submodules see #1539
   - git --version
 
 test_script:

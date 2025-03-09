@@ -7,6 +7,7 @@ describe('[BARE]', () => {
     await environment.init();
     await environment.createRepos(testRepoPaths, [{ bare: true }]);
   });
+
   after('Environment stop', () => environment.shutdown());
 
   it('Open path screen', () => {
@@ -14,7 +15,10 @@ describe('[BARE]', () => {
   });
 
   it('update branches button without branches', async () => {
+    const apiResponseProm = environment.setApiListener('/branches?', 'GET');
+    const refResponseProm = environment.setApiListener('/refs?', 'GET');
     await environment.click('.btn-group.branch .btn-main');
-    await environment.waitForElementHidden('#nprogress');
+    await apiResponseProm;
+    await refResponseProm;
   });
 });

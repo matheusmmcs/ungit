@@ -9,6 +9,7 @@ components.register('commit', (args) => new CommitViewModel(args));
 
 class CommitViewModel {
   constructor(gitNode) {
+    this.graph = gitNode.graph;
     this.repoPath = gitNode.graph.repoPath;
     this.sha1 = gitNode.sha1;
     this.server = gitNode.graph.server;
@@ -18,18 +19,17 @@ class CommitViewModel {
     this.pgpVerifiedString = gitNode.pgpVerifiedString;
     this.pgpIcon = octicons.verified.toSVG({ height: 18 });
     this.element = ko.observable();
-    this.commitTime = ko.observable();
-    this.authorTime = ko.observable();
     this.message = ko.observable();
     this.title = ko.observable();
     this.body = ko.observable();
-    this.authorDate = ko.observable(0);
+    this.authorDate = ko.observable();
     this.authorDateFromNow = ko.observable();
     this.authorName = ko.observable();
     this.authorEmail = ko.observable();
     this.fileLineDiffs = ko.observable();
     this.numberOfAddedLines = ko.observable();
     this.numberOfRemovedLines = ko.observable();
+    this.parents = ko.observable();
     this.authorGravatar = ko.computed(() => md5((this.authorEmail() || '').trim().toLowerCase()));
 
     this.titleSinapse = ko.computed(
@@ -70,8 +70,6 @@ class CommitViewModel {
   }
 
   setData(args) {
-    this.commitTime(moment(new Date(args.commitDate)));
-    this.authorTime(moment(new Date(args.authorDate)));
     const message = args.message.split('\n');
     this.message(args.message);
     this.title(message[0]);
@@ -82,8 +80,8 @@ class CommitViewModel {
     this.authorEmail(args.authorEmail);
     this.numberOfAddedLines(args.additions);
     this.numberOfRemovedLines(args.deletions);
+    this.parents(args.parents || []);
     this.fileLineDiffs(args.fileLineDiffs);
-    this.isInited = true;
     this.commitDiff = ko.observable(
       components.create('commitDiff', {
         fileLineDiffs: this.fileLineDiffs(),
@@ -114,6 +112,17 @@ class CommitViewModel {
       win.focus();
     } else {
       event.stopImmediatePropagation();
+    }
+  }
+
+  copyHash() {
+    navigator.clipboard.writeText(this.sha1);
+  }
+
+  gotoCommit(sha1) {
+    const node = this.graph.nodesById[sha1];
+    if (node) {
+      node.toggleSelected();
     }
   }
 }

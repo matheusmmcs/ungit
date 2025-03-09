@@ -1,12 +1,12 @@
 ungit
 ======
 [![NPM version](https://badge.fury.io/js/ungit.svg)](https://badge.fury.io/js/ungit)
-[![Build Status](https://travis-ci.org/FredrikNoren/ungit.svg)](https://travis-ci.org/FredrikNoren/ungit)
+[![CI](https://github.com/FredrikNoren/ungit/actions/workflows/ci.yml/badge.svg)](https://github.com/FredrikNoren/ungit/actions/workflows/ci.yml)
 [![Join the chat at https://gitter.im/FredrikNoren/ungit](https://badges.gitter.im/FredrikNoren/ungit.svg)](https://gitter.im/FredrikNoren/ungit?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 The easiest way to use git. On any platform. Anywhere.
 
-[![xkcd](xkcd.png)](https://xkcd.com/1597/)
+[![xkcd](xkcd.png "If that doesn't fix it, git.txt contains the phone number of a friend of mine who understands git. Just wait through a few minutes of 'It's really pretty simple, just think of branches as...' and eventually you'll learn the commands that will fix everything.")](https://xkcd.com/1597/)
 
 Git is known for being a versatile distributed source control system that is a staple of many individuals, communities, and even for [the City of Chattanooga to crowd source bicycle parking locations](https://github.com/cityofchattanooga/Bicycle-Parking).  However, it is not known for userfriendliness or easy learning curve.
 
@@ -26,7 +26,7 @@ Quick intro to ungit: [https://youtu.be/hkBVAi3oKvo](https://youtu.be/hkBVAi3oKv
 
 Installing
 ----------
-Requires [node.js](https://nodejs.org) (≥ 10.18.0), [npm](https://www.npmjs.com/) (≥ 6.13.4, comes with node.js) and [git](https://git-scm.com/) (≥ 1.8.x). To install ungit just type:
+Requires [node.js](https://nodejs.org) (≥ 18), [npm](https://www.npmjs.com/) (≥ 9.8.1, comes with node.js) and [git](https://git-scm.com/) (≥ 2.34.x). To install ungit just type:
 
 	npm install -g ungit
 
@@ -34,7 +34,7 @@ NOTE: If your system requires root access to install global npm packages, make s
 
 	sudo -H npm install -g ungit
 
-Prebuilt [electron](https://electronjs.org/) packages are avaiable [here](https://github.com/FredrikNoren/ungit/releases) (git is still required).
+Prebuilt [electron](https://electronjs.org/) packages are available [here](https://github.com/FredrikNoren/ungit/releases) (git is still required).
 
 Using
 -----
@@ -87,8 +87,6 @@ If you have your own merge tool that you would like to use, such as Kaleidoscope
 Auto Refresh
 ------------
 Ungit will watch git directory recursively upon page view and automatically refresh contents on git operations or changes on files that are not configured to be ignored in `.gitignore`.
-
-One caveat is that node's [`fs.watch()`](https://nodejs.org/docs/latest/api/fs.html#fs_fs_watch_filename_options_listener) with `recursive: true` option is only available in Mac and Windows.  For non Mac and Windows machines, git operations will be automatically refreshed but file changes may require manual refreshes as `fs.watch()` is unable to detect changes within nested directory hierarchy.
 
 Text Editor Integrations
 -------------------

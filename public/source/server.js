@@ -25,13 +25,13 @@ module.exports = Server;
 
 Server.prototype.initSocket = function () {
   var self = this;
-  this.socket = io.connect('', {
+  this.socket = io('', {
     path: rootPath + '/socket.io',
   });
-  this.socket.on('error', function (err) {
+  this.socket.on('connect_error', function (err) {
     self._isConnected(function (connected) {
       if (connected) throw err;
-      else self._onDisconnect();
+      else self._onDisconnect(err);
     });
   });
   this.socket.on('disconnect', function () {
@@ -56,7 +56,7 @@ Server.prototype.initSocket = function () {
 Server.prototype._queryToString = function (query) {
   var str = [];
   for (var p in query)
-    if (query.hasOwnProperty(p)) {
+    if (Object.prototype.hasOwnProperty.call(query, p)) {
       str.push(encodeURIComponent(p) + '=' + encodeURIComponent(query[p]));
     }
   return str.join('&');
@@ -71,7 +71,7 @@ Server.prototype._httpJsonRequest = function (request, callback) {
       var body;
       try {
         body = JSON.parse(httpRequest.responseText);
-      } catch (ex) {
+      } catch {
         body = null;
       }
       if (httpRequest.status == 0) callback({ error: 'connection-lost' });
@@ -99,9 +99,11 @@ Server.prototype._isConnected = function (callback) {
     callback(!err && res);
   });
 };
-Server.prototype._onDisconnect = function () {
+Server.prototype._onDisconnect = function (err) {
   if (!this.isUnloading) {
-    programEvents.dispatch({ event: 'disconnected' });
+    const stacktrace = Error().stack;
+    console.warn('disconnecting...', err, stacktrace);
+    programEvents.dispatch({ event: 'disconnected', stacktrace: stacktrace, error: err });
   }
 };
 Server.prototype._getCredentials = function (callback, args) {
@@ -135,7 +137,7 @@ Server.prototype.queryPromise = function (method, path, body) {
             if (connected) {
               reject({ errorCode: 'cross-domain-error', error: error });
             } else {
-              self._onDisconnect();
+              self._onDisconnect(error);
               resolve();
             }
           });
@@ -192,8 +194,8 @@ Server.prototype.unhandledRejection = function (err) {
     });
   } else {
     // Everything else is handled as a pure error, using the precreated error (to get a better stacktrace)
-    console.error('Unhandled Promise ERROR: ', err);
-    programEvents.dispatch({ event: 'git-crash-error' });
+    console.trace('Unhandled Promise ERROR: ', err, JSON.stringify(err));
+    programEvents.dispatch({ event: 'git-crash-error', error: err });
     Raven.captureException(err);
   }
 };

@@ -2,7 +2,7 @@ const path = require('path');
 const fileType = require('./utils/file-type.js');
 const _ = require('lodash');
 
-exports.parseGitStatus = (text, args) => {
+exports.parseGitStatus = (text) => {
   let lines = text.split('\x00');
   const branch = lines[0].split(' ').pop();
   // skipping first line...
@@ -29,7 +29,7 @@ exports.parseGitStatus = (text, args) => {
       displayName: displayName,
       staged: status[0] == 'A' || status[0] == 'M',
       removed: status[0] == 'D' || status[1] == 'D',
-      isNew: (status[0] == '?' || status[0] == 'A') && !(status[0] == 'D' || status[1] == 'D'),
+      isNew: (status[0] == '?' || status[0] == 'A') && status[1] != 'D',
       conflict: (status[0] == 'A' && status[1] == 'A') || status[0] == 'U' || status[1] == 'U',
       renamed: status[0] == 'R',
       type: fileType(newFileName),
@@ -37,14 +37,13 @@ exports.parseGitStatus = (text, args) => {
   }
 
   return {
-    isMoreToLoad: false,
     branch: branch,
-    inited: true,
     files: files,
   };
 };
 
-const fileChangeRegex = /(?<additions>[\d-]+)\t(?<deletions>[\d-]+)\t((?<fileName>[^\x00]+?)\x00|\x00(?<oldFileName>[^\x00]+?)\x00(?<newFileName>[^\x00]+?)\x00)/g;
+const fileChangeRegex =
+  /(?<additions>[\d-]+)\t(?<deletions>[\d-]+)\t((?<fileName>[^\x00]+?)\x00|\x00(?<oldFileName>[^\x00]+?)\x00(?<newFileName>[^\x00]+?)\x00)/g;
 
 exports.parseGitStatusNumstat = (text) => {
   const result = {};
@@ -161,7 +160,7 @@ exports.parseGitLog = (data) => {
       parser = parseFileChanges;
       return;
     }
-    if (rows[index + 1] && rows[index + 1].indexOf('\x00commit ') == 0) {
+    if (rows[index + 1] && /^\u0000+commit/.test(rows[index + 1])) {
       parser = parseCommitLine;
       return;
     }
@@ -271,9 +270,9 @@ exports.parseGitStashShow = (text) => {
   });
 };
 
-exports.parseGitSubmodule = (text, args) => {
+exports.parseGitSubmodule = (text) => {
   if (!text) {
-    return {};
+    return [];
   }
 
   let submodule;
@@ -302,10 +301,10 @@ exports.parseGitSubmodule = (text, args) => {
           if (url.indexOf('http') != 0) {
             if (url.indexOf('git:') == 0) {
               // git
-              url = `http${url.substr(url.indexOf(':'))}`;
+              url = `http${url.substring(url.indexOf(':'))}`;
             } else {
               // ssh
-              url = `http://${url.substr(url.indexOf('@') + 1).replace(':', '/')}`;
+              url = `http://${url.substring(url.indexOf('@') + 1).replace(':', '/')}`;
             }
           }
 
