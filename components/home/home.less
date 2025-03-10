@@ -26,4 +26,80 @@
       color: #a5a5a5;
     }
   }
+
+  .repo-icon {
+    padding: 20px 5px;
+    margin: 0 20px;
+  }
+
+  .options-menu {
+    position: absolute;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    padding-right: 15px;
+    right: 0;
+    z-index: 30;
+  }
+
+
+  .list-gap {
+    width: 100%;
+    margin-top: 75px;
+  }
+
+  .list-hr {
+    border-color: #19213c;
+  }
+
+  .list-repos {
+    display: flex;
+    flex-direction: column; /* Exibe os itens em coluna por padrão */
+    width: 100%;
+    margin-bottom: 20px;
+    gap: 8px; /* Espaçamento entre os itens */
+  }
+  
+  .repository {
+    display: flex;
+    align-items: center; /* Centraliza verticalmente */
+    width: 100%;
+    padding: 20px 10px;
+    box-sizing: border-box;
+
+    .icon {
+      width: 40px; /* Define um tamanho fixo para o ícone */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .content {
+      flex: 1; /* Ocupa o espaço disponível */
+      display: flex;
+      flex-direction: column;
+      justify-content: center; /* Centraliza verticalmente */
+      text-align: left;
+      padding: 0 8px;
+    }
+
+    .actions {
+      width: 90px;
+      display: flex;
+      gap: 8px;
+    }
+  }
+  
+  .bloco {
+    flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha */
+    flex-direction: row;
+  }
+  
+  .bloco .repository {
+    width: calc(50% - 4px); /* 50% da largura menos metade do gap */
+    padding: 8px;
+  }
+
+  .repo-link {
+    color: #4a768f;
+  }
 }

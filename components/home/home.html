@@ -6,19 +6,97 @@
       Then press the <span data-bind="html: addIcon"></span> symbol to make it show up here.
     </div>
   </div>
-  <div class="list-group" data-bind="foreach: repos">
+  <div class="options-menu">
+    <div class="btn-group">
+      <button type="button" class="btn btn-default btn-main" data-bind="visible: isListView(), click: setViewBlock">
+        <span data-bind="html: viewBlockIcon"></span>
+        <span>Block</span>
+      </button>
+      <button type="button" class="btn btn-default btn-main" data-bind="visible: !isListView(), click: setViewList">
+        <span data-bind="html: viewListIcon"></span>
+        <span>List</span>
+      </button>
+    </div>
+  </div>
+  <!-- <div class="repos-menu">
+    <button type="button" class="btn btn-default btn-main" data-bind="visible: isListView(), click: setViewBlock">
+      <span data-bind="html: viewBlockIcon"></span>
+      <span>Gitlab</span>
+    </button>
+    <button type="button" class="btn btn-default btn-main" data-bind="visible: !isListView(), click: setViewList">
+      <span data-bind="html: viewListIcon"></span>
+      <span>Gitolie</span>
+    </button>
+  </div> -->
+
+  <div class="list-gap"></div>
+  
+  <div class="list-repos" data-bind="foreach: reposFavorites, css: { 'bloco': !isListView() }">
     <a
       class="list-group-item repository"
       data-bind="attr: { href: link }, css: { 'path-removed': pathRemoved }"
     >
-      <span class="arrow-icon octicon-circled pull-left" data-bind="html: arrowIcon"></span>
-      <h4 class="list-group-item-heading" data-bind="text: title"></h4>
-      <p class="list-group-item-text" data-bind="text: remote"></p>
-      <button
-        type="button"
-        class="btn btn-default list-item-remove"
-        data-bind="html: removeIcon, click: remove"
-      ></button>
+      <div class="icon">
+        <span class="arrow-icon repo-icon" data-bind="html: arrowIcon"></span>
+      </div>
+      <div class="content">
+        <h4 class="list-group-item-heading" data-bind="text: projectname"></h4>
+        <p class="list-group-item-text" data-bind="text: title, visible: isListView()"></p>
+        <p class="list-group-item-text repo-link" data-bind="text: remote, visible: isListView()"></p>
+      </div>
+      <div class="actions">
+        <button
+          type="button"
+          class="btn btn-default list-item-star"
+          data-bind="html: starEmptyIcon, click: favorite, visible: !isFavorite()"
+        ></button>
+        <button
+          type="button"
+          class="btn btn-default list-item-star"
+          data-bind="html: starFillIcon, click: favorite, visible: isFavorite()"
+        ></button>
+        <button
+          type="button"
+          class="btn btn-default list-item-remove"
+          data-bind="html: removeIcon, click: remove"
+        ></button>
+      </div>
     </a>
   </div>
+
+  <hr class="list-hr"/>
+
+  <div class="list-repos" data-bind="foreach: repos, css: { 'bloco': !isListView() }">
+    <a
+      class="list-group-item repository"
+      data-bind="attr: { href: link }, css: { 'path-removed': pathRemoved }"
+    >
+      <div class="icon">
+        <span class="arrow-icon repo-icon" data-bind="html: arrowIcon"></span>
+      </div>
+      <div class="content">
+        <h4 class="list-group-item-heading" data-bind="text: projectname"></h4>
+        <p class="list-group-item-text" data-bind="text: title, visible: isListView()"></p>
+        <p class="list-group-item-text repo-link" data-bind="text: remote, visible: isListView()"></p>
+      </div>
+      <div class="actions">
+        <button
+          type="button"
+          class="btn btn-default list-item-star"
+          data-bind="html: starEmptyIcon, click: favorite, visible: !isFavorite()"
+        ></button>
+        <button
+          type="button"
+          class="btn btn-default list-item-star"
+          data-bind="html: starFillIcon, click: favorite, visible: isFavorite()"
+        ></button>
+        <button
+          type="button"
+          class="btn btn-default list-item-remove"
+          data-bind="html: removeIcon, click: remove"
+        ></button>
+      </div>
+    </a>
+  </div>
+
 </div>

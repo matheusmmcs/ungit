@@ -19,7 +19,7 @@
           <div>
             <span
               class="title"
-              data-bind="text: (title().length > 72 ? title().substring(0, 72) + '...' : title)"
+              data-bind="html: titleSinapse()"
             ></span>
             <span class="text-muted"
               >by <a data-bind="text: authorName, attr: { href: 'mailto:' + authorEmail() }"></a

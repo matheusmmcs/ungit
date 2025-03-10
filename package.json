@@ -2,7 +2,7 @@
   "name": "ungit",
   "author": "Fredrik Norén <fredrik.jw.noren@gmail.com>",
   "description": "Git made easy",
-  "version": "1.5.28",
+  "version": "1.5.28-sti-1.1",
   "ungitPluginApiVersion": "0.2.0",
   "scripts": {
     "start": "node ./bin/ungit",
@@ -16,7 +16,10 @@
     "build": "node ./scripts/build.js",
     "watch": "nodemon -C --exec \"npm run build\" -e js,less -w public/source -w public/less -w components/ -i \"*.bundle.js\"",
     "bumpdependencies": "ncu --upgrade --reject bootstrap",
-    "electronpackage": "node ./scripts/electronpackage.js",
+    "electronpackage": "node ./scripts/electronpackage.js --platform=darwin --arch=x64 && node ./scripts/electronpackage.js --platform=linux --arch=x64 && node ./scripts/electronpackage.js --platform=win32 --arch=ia32",
+    "electronpackage-mac": "node ./scripts/electronpackage.js --platform=darwin --arch=x64",
+    "electronpackage-win": "node ./scripts/electronpackage.js --platform=win32 --arch=ia32",
+    "electronpackage-linux": "node ./scripts/electronpackage.js --platform=linux --arch=x64",
     "electronzip": "node ./scripts/electronzip.js"
   },
   "repository": {
@@ -52,6 +55,7 @@
     "mkdirp": "~3.0.1",
     "moment": "~2.30.1",
     "node-cache": "~5.1.2",
+    "node-fetch": "^3.3.2",
     "nprogress": "~0.2.0",
     "open": "~10.1.0",
     "p-limit": "~6.2.0",

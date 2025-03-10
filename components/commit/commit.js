@@ -3,6 +3,7 @@ const md5 = require('blueimp-md5');
 const moment = require('moment');
 const octicons = require('octicons');
 const components = require('ungit-components');
+const config = require('../../utils/config.json');
 
 components.register('commit', (args) => new CommitViewModel(args));
 
@@ -30,6 +31,27 @@ class CommitViewModel {
     this.numberOfRemovedLines = ko.observable();
     this.parents = ko.observable();
     this.authorGravatar = ko.computed(() => md5((this.authorEmail() || '').trim().toLowerCase()));
+
+    this.titleSinapse = ko.computed(
+      () => {
+        const limitTitle = 72;
+        let title = this.title() != null ? this.title() : '';
+        const re = /(.*)#(\d+)(.*)/;
+        let containsRe = title ? title.match(re) : false;
+        if (containsRe) {
+          let link = '', number = '';
+          let titleRep = title.replace(re, function(expression, n1, n2, n3){
+            number = n2;
+            link = `<a href="${config.sinapseUrl}issues/${number}" target="blank">#${number}</a>`;
+            return `${n1}${link}${n3}`;
+          });
+          console.log()
+          return title.length > limitTitle ? titleRep.substring(0, limitTitle + link.length - number.length) + '...' : titleRep;
+        } else {
+          return title.length > limitTitle ? title.substring(0, limitTitle) + '...' : title;
+        }
+      }
+    );
 
     this.showCommitDiff = ko.computed(
       () => this.fileLineDiffs() && this.fileLineDiffs().length > 0
@@ -85,7 +107,12 @@ class CommitViewModel {
   }
 
   stopClickPropagation(data, event) {
-    event.stopImmediatePropagation();
+    if (event.target.nodeName == 'A') {
+      var win = window.open(event.target.href, '_blank');
+      win.focus();
+    } else {
+      event.stopImmediatePropagation();
+    }
   }
 
   copyHash() {

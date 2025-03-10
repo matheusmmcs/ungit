@@ -3,6 +3,8 @@ const _ = require('lodash');
 const octicons = require('octicons');
 const components = require('ungit-components');
 const programEvents = require('ungit-program-events');
+
+const config = require('../../utils/config.json');
 const filesToDisplayIncrmentBy = 50;
 const filesToDisplayLimit = filesToDisplayIncrmentBy;
 const mergeTool = ungit.config.mergeTool;
@@ -118,6 +120,28 @@ class StagingViewModel extends ComponentRoot {
     this.stashIcon = octicons.pin.toSVG({ height: 15 });
     this.discardIcon = octicons.x.toSVG({ height: 18 });
     this.ignoreIcon = octicons.skip.toSVG({ height: 18 });
+
+    this.canGenerateTitleCommit = ko.computed(() => {
+      if (this.commitMessageTitle() != null && this.commitMessageTitle().length > 0) {
+        return /^\d+$/.test(this.commitMessageTitle());
+      }
+      return false; 
+    })
+  }
+
+  generateTitleCommit() {
+    let _this = this;
+    fetch(`/api/redmine/issue/${this.commitMessageTitle()}`).then(function (response) {
+        return response.json();
+      }).then(function (data) {
+        try {
+          const tracker = data.issue.tracker.name.toUpperCase();
+          const commitTitle = tracker.includes("SUSTENTA") ? 'BugFix' : tracker.includes("CUSTOMIZ") ? 'Custom' : tracker.includes("DIRETA EM BD") ? 'OperDB' : 'Commit';
+          _this.commitMessageTitle(`${commitTitle} #${data.issue.id} - ${data.issue.subject}`);
+        } catch(e) {
+          console.error(e);
+        }
+      });
   }
 
   updateNode(parentElement) {

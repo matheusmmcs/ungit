@@ -16,6 +16,9 @@ const cache = require('./utils/cache');
 const UngitPlugin = require('./ungit-plugin');
 const serveStatic = require('serve-static');
 
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const configSinapse = require('../utils/config.json');
+
 process.on('uncaughtException', (err) => {
   logger.error(err.stack ? err.stack.toString() : err.toString());
   bugtracker.notify(err, 'ungit-launcher');
@@ -404,6 +407,14 @@ app.get('/api/fs/listDirectories', ensureAuthenticated, (req, res) => {
       res.json(filteredFiles);
     })
     .catch((err) => res.status(400).json(err));
+});
+
+app.get('/api/redmine/issue/:idissue', ensureAuthenticated, (req, res) => {
+  fetch(`${configSinapse.sinapseUrl}issues/${req.params.idissue}.json?key=${configSinapse.sinapseApiKey}`).then(function  (response) {
+    return response.json();
+  }).then(function (data) {
+    res.json(data);
+  });
 });
 
 // Error handling
