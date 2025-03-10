@@ -20,6 +20,10 @@ class AppViewModel {
     this.repoList.subscribe((newValue) => {
       storage.setItem('repositories', JSON.stringify(newValue));
     });
+    this.repoFavoriteList = ko.observableArray(this.getRepoFavoriteList()); // visitedRepositories is legacy, remove in the next version
+    this.repoFavoriteList.subscribe((newValue) => {
+      storage.setItem('favoriteRepositories', JSON.stringify(newValue));
+    });
     this.content = ko.observable(components.create('home', { app: this }));
     this.currentVersion = ko.observable();
     this.latestVersion = ko.observable();
@@ -52,6 +56,17 @@ class AppViewModel {
       .filter((v, i, a) => a.indexOf(v) === i)
       .sort();
     storage.setItem('repositories', JSON.stringify(newRepos));
+    return newRepos;
+  }
+  getRepoFavoriteList() {
+    const localStorageRepo = JSON.parse(
+      storage.getItem('favoriteRepositories') || '[]'
+    );
+    const newRepos = localStorageRepo
+      .concat(ungit.config.defaultRepositories || [])
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort();
+    storage.setItem('favoriteRepositories', JSON.stringify(newRepos));
     return newRepos;
   }
   updateNode(parentElement) {

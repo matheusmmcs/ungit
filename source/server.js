@@ -16,7 +16,7 @@ const cache = require('./utils/cache');
 const UngitPlugin = require('./ungit-plugin');
 const serveStatic = require('serve-static');
 
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const configSinapse = require('../utils/config.json');
 
 process.on('uncaughtException', (err) => {
