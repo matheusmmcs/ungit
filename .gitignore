@@ -18,3 +18,5 @@ components/**/*.css.map
 .vscode/
 .ungitrc
 ungit-*.tgz
+
+ungit.app
