@@ -1,6 +1,6 @@
 ungit
 ======
-[![NPM version](https://badge.fury.io/js/ungit.svg)](https://badge.fury.io/js/ungit)
+[![Release](https://img.shields.io/github/v/release/FredrikNoren/ungit)](https://github.com/FredrikNoren/ungit/releases)
 [![CI](https://github.com/FredrikNoren/ungit/actions/workflows/ci.yml/badge.svg)](https://github.com/FredrikNoren/ungit/actions/workflows/ci.yml)
 [![Join the chat at https://gitter.im/FredrikNoren/ungit](https://badges.gitter.im/FredrikNoren/ungit.svg)](https://gitter.im/FredrikNoren/ungit?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -26,7 +26,7 @@ Quick intro to ungit: [https://youtu.be/hkBVAi3oKvo](https://youtu.be/hkBVAi3oKv
 
 Installing
 ----------
-Requires [node.js](https://nodejs.org) (≥ 18), [npm](https://www.npmjs.com/) (≥ 9.8.1, comes with node.js) and [git](https://git-scm.com/) (≥ 2.34.x). To install ungit just type:
+Requires [node.js](https://nodejs.org) (≥ 20.19.0), [npm](https://www.npmjs.com/) (≥ 10.8.2, comes with node.js) and [git](https://git-scm.com/) (≥ 2.34.x). To install ungit just type:
 
 	npm install -g ungit
 
@@ -98,10 +98,6 @@ Text Editor Integrations
 * [brackets-ungit](https://github.com/Hirse/brackets-ungit) for [Brackets.io](http://brackets.io/) by [@Hirse](https://github.com/Hirse)
 
 ![brackets-ungit Screenshot](https://raw.githubusercontent.com/Hirse/brackets-ungit/master/images/viewer.png)
-
-* [Codiad-OpenUngit](https://github.com/viharm/Codiad-OpenUngit) for [Codiad](http://codiad.com/) by [@viharm](https://github.com/viharm)
-
-![Codiad-OpenUngit screenshot](https://cloud.githubusercontent.com/assets/2663937/21566609/6d107410-ce9c-11e6-91e1-2d8a1607b718.png)
 
 * [vscode-ungit](https://marketplace.visualstudio.com/items?itemName=Hirse.vscode-ungit) for [Visual Studio Code](https://code.visualstudio.com/) by [@Hirse](https://github.com/Hirse)
 

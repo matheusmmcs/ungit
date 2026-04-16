@@ -9,10 +9,9 @@ module.exports = async ({ github, context, core, exec }) => {
   const tag = `v${version}`;
   packageJson.version += `+${hash}`;
   await fs.writeFile('package.json', `${JSON.stringify(packageJson, null, 2)}\n`);
-  await fs.writeFile('.npmrc', '//registry.npmjs.org/:_authToken=' + process.env.NPM_TOKEN);
   core.info(`Publish ${packageJson.version} to npm`);
   try {
-    if ((await exec.exec('npm publish')) != 0) {
+    if ((await exec.exec('npm publish', ['--provenance', '--access public'])) != 0) {
       core.info('npm publish failed.');
       return;
     }
@@ -32,14 +31,14 @@ module.exports = async ({ github, context, core, exec }) => {
     )})`,
   });
   const filePaths = await fs.readdir('dist');
-  for (let i = 0; i < filePaths.length; i++) {
-    const filePath = path.join('dist', filePaths[i]);
+  for (const file of filePaths) {
+    const filePath = path.join('dist', file);
     core.info(`Uploading release asset ${filePath}`);
     await github.rest.repos.uploadReleaseAsset({
       owner: context.repo.owner,
       repo: context.repo.repo,
       release_id: release.data.id,
-      name: path.basename(filePath).replace('ungit', `ungit-${version}`),
+      name: file.replace('ungit', `ungit-${version}`),
       data: await fs.readFile(filePath),
     });
   }
