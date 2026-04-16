@@ -28,23 +28,144 @@
   }
 
   .repo-icon {
-    padding: 20px 5px;
-    margin: 0 20px;
+    padding: 4px;
+    margin: 0 14px 0 8px;
   }
 
-  .options-menu {
-    position: absolute;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    padding-right: 15px;
-    right: 0;
-    z-index: 30;
+  .config-section {
+    margin-top: 14px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(82, 97, 110, 0.4);
+    border-radius: 6px;
+    background: rgba(25, 33, 60, 0.35);
+    padding: 10px 12px;
+
+    .config-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+
+      h4 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: #c5d5df;
+      }
+    }
   }
 
+  .groups-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0;
+    margin-bottom: 12px;
+    gap: 16px;
+
+    .group-create {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      max-width: 520px;
+
+      .group-icon {
+        color: #52616e;
+      }
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .options-menu {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0;
+      margin-bottom: 0;
+      flex-shrink: 0;
+
+      .btn-group {
+        display: flex;
+        gap: 8px;
+      }
+    }
+  }
+
+  .group-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .group-section {
+    margin: 20px 10px;
+
+    &.drop-active {
+      .group-header {
+        border-bottom-color: #4a768f;
+      }
+
+      .list-repos {
+        background: rgba(74, 118, 143, 0.08);
+        border-radius: 4px;
+      }
+
+      .group-drop-area {
+        border-color: #4a768f;
+        background: rgba(74, 118, 143, 0.18);
+        color: #d6e6ef;
+      }
+    }
+  }
+
+  .group-drop-area {
+    min-height: 44px;
+    border: 1px dashed rgba(116, 142, 160, 0.55);
+    border-radius: 4px;
+    color: #95a8b5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: rgba(15, 23, 42, 0.12);
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+
+    strong {
+      color: #c5d5df;
+      margin-left: 4px;
+    }
+  }
+
+  .group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #29314f;
+    padding-bottom: 6px;
+  }
+
+  .group-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .group-actions {
+    display: flex;
+    gap: 8px;
+  }
 
   .list-gap {
     width: 100%;
-    margin-top: 75px;
+    margin-top: 0;
   }
 
   .list-hr {
@@ -53,53 +174,90 @@
 
   .list-repos {
     display: flex;
-    flex-direction: column; /* Exibe os itens em coluna por padrão */
+    flex-direction: column;
     width: 100%;
     margin-bottom: 20px;
-    gap: 8px; /* Espaçamento entre os itens */
+    gap: 8px;
   }
   
   .repository {
     display: flex;
-    align-items: center; /* Centraliza verticalmente */
+    align-items: center;
     width: 100%;
     padding: 20px 10px;
     box-sizing: border-box;
+    gap: 8px;
+
+    &.is-dragging {
+      opacity: 0.55;
+    }
+
+    .drag-handle {
+      width: 20px;
+      min-width: 20px;
+      color: #686868;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: grab;
+
+      &:hover {
+        color: #a5a5a5;
+      }
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
 
     .icon {
-      width: 40px; /* Define um tamanho fixo para o ícone */
+      width: 40px;
+      min-width: 40px;
       display: flex;
       justify-content: center;
       align-items: center;
     }
 
     .content {
-      flex: 1; /* Ocupa o espaço disponível */
+      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      justify-content: center; /* Centraliza verticalmente */
+      justify-content: center;
       text-align: left;
       padding: 0 8px;
     }
 
     .actions {
-      width: 90px;
+      width: auto;
+      min-width: 0;
       display: flex;
       gap: 8px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
     }
   }
   
   .bloco {
-    flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha */
+    flex-wrap: wrap;
     flex-direction: row;
   }
   
   .bloco .repository {
-    width: calc(50% - 4px); /* 50% da largura menos metade do gap */
+    width: calc(50% - 4px);
     padding: 8px;
+    align-items: center;
+  }
+
+  .bloco .repository .actions {
+    align-self: center;
   }
 
   .repo-link {
     color: #4a768f;
+  }
+
+  .list-item-order {
+    padding: 4px 7px;
   }
 }

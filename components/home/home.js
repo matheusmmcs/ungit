@@ -5,32 +5,36 @@ const { encodePath } = require('ungit-address-parser');
 
 components.register('home', (args) => new HomeViewModel(args.app));
 
-const TYPES_SORT = {
-  project: 'project',
-  path: 'path'
-};
-
 const TYPES_VIEW = {
   list: 'List',
   block: 'Block'
 };
 
 class HomeRepositoryViewModel {
-  constructor(home, path) {
+  constructor(home, path, groupName) {
     this.home = home;
     this.app = home.app;
     this.server = this.app.server;
     this.path = path;
     this.title = path;
-    this.projectname = path.split("/").pop();
+    this.projectname = path.split('/').pop();
+    this.groupName = ko.observable(groupName || '');
     this.link = `${ungit.config.rootPath}/#/repository?path=${encodePath(path)}`;
     this.pathRemoved = ko.observable(false);
     this.remote = ko.observable('...');
+    this.isDragging = ko.observable(false);
     this.updateState();
     this.removeIcon = octicons['x-circle'].toSVG({ height: 18 });
     this.arrowIcon = octicons['file-directory-open-fill'].toSVG({ height: 24 });
     this.starEmptyIcon = octicons['star'].toSVG({ height: 24 });
     this.starFillIcon = octicons['star-fill'].toSVG({ height: 24 });
+    this.moveUpIcon = octicons['arrow-up'].toSVG({ height: 16 });
+    this.moveDownIcon = octicons['arrow-down'].toSVG({ height: 16 });
+    this.dragHandleIcon = octicons['grabber'].toSVG({ height: 32 });
+  }
+
+  updateGroupName(groupName) {
+    this.groupName(groupName || '');
   }
 
   updateState() {
@@ -51,40 +55,92 @@ class HomeRepositoryViewModel {
   }
 
   remove() {
-    this.app.repoList.remove(this.path);
+    this.app.removeRepository(this.path);
     this.home.update();
+    return false;
   }
 
   favorite() {
-    if (this.app.repoFavoriteList.indexOf(this.path) == -1) {
-      this.app.repoFavoriteList.push(this.path);
-    } else {
-      this.app.repoFavoriteList.remove(this.path);
-    }
+    this.app.toggleFavorite(this.path);
     this.home.update();
+    return false;
   }
 
   isFavorite() {
-    return this.app.repoFavoriteList.indexOf(this.path) > -1;
+    return this.app.isFavorite(this.path);
   }
 
   isListView() {
     return this.home.typeViewSelected() == TYPES_VIEW.list;
+  }
+
+  canMoveUp() {
+    return this.app.canMoveRepository(this.path, -1);
+  }
+
+  canMoveDown() {
+    return this.app.canMoveRepository(this.path, 1);
+  }
+
+  moveUp() {
+    this.app.moveRepository(this.path, -1);
+    this.home.update();
+    return false;
+  }
+
+  moveDown() {
+    this.app.moveRepository(this.path, 1);
+    this.home.update();
+    return false;
+  }
+
+  onGroupChanged(_data, event) {
+    if (!event || !event.target) return true;
+    this.app.setRepositoryGroup(this.path, event.target.value || '');
+    this.home.update();
+    return true;
+  }
+
+  onDragStart(isDragging) {
+    this.isDragging(Boolean(isDragging));
+  }
+
+  onDragEnd(isDragging) {
+    this.isDragging(Boolean(isDragging));
   }
 }
 
 class HomeViewModel {
   constructor(app) {
     this.app = app;
-    this.repos = ko.observableArray();
-    this.reposFavorites = ko.observableArray();
-    this.showNux = ko.computed(() => this.repos().length == 0);
-    this.showNuxFavorites = ko.computed(() => this.reposFavorites().length == 0);
+    this.groups = ko.observableArray();
+    this.ungroupedRepos = ko.observableArray();
+    this.repositoriesByPath = {};
+    this.showNux = ko.computed(() => this.app.repoList().length == 0);
+    this.ungroupedDropActive = ko.observable(false);
     this.addIcon = octicons.plus.toSVG({ height: 18 });
     this.typeViews = Object.values(TYPES_VIEW);
     this.typeViewSelected = ko.observable(TYPES_VIEW.block);
     this.viewBlockIcon = octicons['apps'].toSVG({ height: 24 });
     this.viewListIcon = octicons['list-unordered'].toSVG({ height: 24 });
+    this.exportIcon = octicons['download'].toSVG({ height: 16 });
+    this.importIcon = octicons['upload'].toSVG({ height: 16 });
+    this.groupIcon = octicons['repo'].toSVG({ height: 16 });
+    this.editIcon = octicons['pencil'].toSVG({ height: 16 });
+    this.groupNameInput = ko.observable('');
+    this.importInputElement = ko.observable();
+    this.hasGroups = ko.computed(() => this.app.getGroupsAlphabetical().length > 0);
+    this.groupOptionsWithEmpty = ko.computed(() => [
+      { label: 'Sem grupo', value: '' },
+      ...this.app.getGroupsAlphabetical().map((groupName) => ({
+        label: groupName,
+        value: groupName,
+      })),
+    ]);
+
+    this.app.repoList.subscribe(() => this.update());
+    this.app.repoFavoriteList.subscribe(() => this.update());
+    this.app.repoMetadata.subscribe(() => this.update());
   }
 
   isListView() {
@@ -107,53 +163,145 @@ class HomeViewModel {
     this.update();
   }
 
-  customSort(list, type) {
-    const getProjectName = path => path.split("/").pop();
-
-    // sort by project name
-    if (type == TYPES_SORT.project) {
-      list.sort((a, b) => getProjectName(a).localeCompare(getProjectName(b)));
-    } else {
-      list.sort();
+  createGroup() {
+    const created = this.app.createGroup(this.groupNameInput());
+    if (created) {
+      this.groupNameInput('');
+      this.update();
     }
+    return false;
+  }
 
-    return list;
+  renameGroup(groupViewModel) {
+    const newName = window.prompt('Novo nome do grupo:', groupViewModel.name);
+    if (!newName) return false;
+    this.app.renameGroup(groupViewModel.name, newName);
+    this.update();
+    return false;
+  }
+
+  removeGroup(groupViewModel) {
+    const shouldRemove = window.confirm(
+      `Remover o grupo "${groupViewModel.name}"? Os repositórios irão para Sem grupo.`
+    );
+    if (!shouldRemove) return false;
+    this.app.removeGroup(groupViewModel.name);
+    this.update();
+    return false;
+  }
+
+  exportRepositories() {
+    const payload = this.app.exportRepositoriesData();
+    const content = JSON.stringify(payload, null, 2);
+    const blob = new Blob([content], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `ungit-repositories-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    return false;
+  }
+
+  triggerImport() {
+    const input = this.importInputElement();
+    if (!input) return false;
+    input.value = '';
+    input.click();
+    return false;
+  }
+
+  importFromFile(_data, event) {
+    const selectedFile = event && event.target && event.target.files ? event.target.files[0] : null;
+    if (!selectedFile) return true;
+
+    const modeHint = window.prompt(
+      'Digite M para Mesclar ou R para Substituir os dados atuais:',
+      'M'
+    );
+    if (!modeHint) return true;
+    const mode = modeHint.toLowerCase().startsWith('r') ? 'replace' : 'merge';
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const payload = JSON.parse(reader.result);
+        this.app.importRepositoriesData(payload, mode);
+        this.update();
+      } catch {
+        window.alert('Arquivo JSON invalido para importacao.');
+      }
+    };
+    reader.readAsText(selectedFile);
+    return true;
+  }
+
+  onUngroupedDragEnter(draggedRepository) {
+    if (!draggedRepository || !draggedRepository.groupName()) return;
+    this.ungroupedDropActive(true);
+  }
+
+  onUngroupedDragLeave() {
+    this.ungroupedDropActive(false);
+  }
+
+  onUngroupedDrop(draggedRepository) {
+    this.ungroupedDropActive(false);
+    if (!draggedRepository || !draggedRepository.path) return;
+    this.app.setRepositoryGroup(draggedRepository.path, '');
+    this.update();
+  }
+
+  _createGroupViewModel(groupName, repositories) {
+    const groupViewModel = {
+      name: groupName,
+      repos: repositories,
+      dropActive: ko.observable(false),
+    };
+
+    groupViewModel.onDragEnter = (draggedRepository) => {
+      if (!draggedRepository || draggedRepository.groupName() === groupName) return;
+      groupViewModel.dropActive(true);
+    };
+
+    groupViewModel.onDragLeave = () => {
+      groupViewModel.dropActive(false);
+    };
+
+    groupViewModel.onDrop = (draggedRepository) => {
+      groupViewModel.dropActive(false);
+      if (!draggedRepository || !draggedRepository.path) return;
+      this.app.setRepositoryGroup(draggedRepository.path, groupName);
+      this.update();
+    };
+
+    return groupViewModel;
+  }
+
+  _getOrCreateRepository(path, groupName) {
+    if (!this.repositoriesByPath[path]) {
+      this.repositoriesByPath[path] = new HomeRepositoryViewModel(this, path, groupName);
+    }
+    this.repositoriesByPath[path].updateGroupName(groupName);
+    return this.repositoriesByPath[path];
   }
 
   update() {
-    const reposByPath = {}, reposByPathFavorites = {};
-    
-    const favorites = this.app.repoFavoriteList();
-    const reps = this.app.repoList();
-    const noFavorites = reps.filter(repo => !favorites.includes(repo));
-
-    const typeSort = TYPES_SORT.project;
-
-    this.repos().forEach((repo) => {
-      if (favorites && favorites.length > 0 && favorites.includes(repo.path)) {
-        reposByPathFavorites[repo.path] = repo;
-      } else {
-        reposByPath[repo.path] = repo;
-      }
+    const groups = this.app.getGroupsAlphabetical().map((groupName) => {
+      const repositories = this.app
+        .getRepositoriesByGroup(groupName)
+        .map((path) => this._getOrCreateRepository(path, groupName));
+      return this._createGroupViewModel(groupName, repositories);
     });
 
-    this.reposFavorites(
-      this.customSort(favorites, typeSort)
-        .map((path) => {
-          if (!reposByPathFavorites[path]) reposByPathFavorites[path] = new HomeRepositoryViewModel(this, path);
-          return reposByPathFavorites[path];
-        })
-    );
+    const ungrouped = this.app
+      .getUngroupedRepositories()
+      .map((path) => this._getOrCreateRepository(path, ''));
 
-    this.repos(
-      this.customSort(noFavorites, typeSort)
-        .map((path) => {
-          if (!reposByPath[path]) reposByPath[path] = new HomeRepositoryViewModel(this, path);
-          return reposByPath[path];
-        })
-    );
-    
+    this.ungroupedDropActive(false);
+    this.groups(groups);
+    this.ungroupedRepos(ungrouped);
   }
+
   get template() {
     return 'home';
   }

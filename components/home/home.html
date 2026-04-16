@@ -6,97 +6,202 @@
       Then press the <span data-bind="html: addIcon"></span> symbol to make it show up here.
     </div>
   </div>
-  <div class="options-menu">
-    <div class="btn-group">
-      <button type="button" class="btn btn-default btn-main" data-bind="visible: isListView(), click: setViewBlock">
-        <span data-bind="html: viewBlockIcon"></span>
-        <span>Block</span>
-      </button>
-      <button type="button" class="btn btn-default btn-main" data-bind="visible: !isListView(), click: setViewList">
-        <span data-bind="html: viewListIcon"></span>
-        <span>List</span>
-      </button>
+
+  <input
+    type="file"
+    accept="application/json,.json"
+    style="display: none;"
+    data-bind="element: importInputElement, event: { change: importFromFile }"
+  />
+
+  <div class="config-section">
+    <div class="config-header">
+      <h4>Configuração</h4>
+      <div class="toolbar-actions">
+        <button type="button" class="btn btn-default btn-main" data-bind="click: exportRepositories">
+          <span data-bind="html: exportIcon"></span>
+          <span>Export</span>
+        </button>
+        <button type="button" class="btn btn-default btn-main" data-bind="click: triggerImport">
+          <span data-bind="html: importIcon"></span>
+          <span>Import</span>
+        </button>
+      </div>
     </div>
   </div>
-  <!-- <div class="repos-menu">
-    <button type="button" class="btn btn-default btn-main" data-bind="visible: isListView(), click: setViewBlock">
-      <span data-bind="html: viewBlockIcon"></span>
-      <span>Gitlab</span>
-    </button>
-    <button type="button" class="btn btn-default btn-main" data-bind="visible: !isListView(), click: setViewList">
-      <span data-bind="html: viewListIcon"></span>
-      <span>Gitolie</span>
-    </button>
-  </div> -->
 
+  <div class="config-section">
+    <div class="groups-toolbar">
+      <div class="group-create">
+        <span class="group-icon" data-bind="html: groupIcon"></span>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Novo grupo"
+          data-bind="value: groupNameInput, valueUpdate: 'afterkeydown'"
+        />
+        <button type="button" class="btn btn-default btn-main" data-bind="click: createGroup">
+          Criar grupo
+        </button>
+      </div>
+
+      <div class="options-menu">
+        <div class="btn-group">
+          <button type="button" class="btn btn-default btn-main" data-bind="visible: isListView(), click: setViewBlock">
+            <span data-bind="html: viewBlockIcon"></span>
+            <span>Block</span>
+          </button>
+          <button type="button" class="btn btn-default btn-main" data-bind="visible: !isListView(), click: setViewList">
+            <span data-bind="html: viewListIcon"></span>
+            <span>List</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="list-gap"></div>
-  
-  <div class="list-repos" data-bind="foreach: reposFavorites, css: { 'bloco': !isListView() }">
-    <a
-      class="list-group-item repository"
-      data-bind="attr: { href: link }, css: { 'path-removed': pathRemoved }"
+
+  <div class="group-sections" data-bind="foreach: groups">
+    <div
+      class="group-section"
+      data-bind="css: { 'drop-active': dropActive }, dropOver: $root.hasGroups, dragEnter: onDragEnter, dragLeave: onDragLeave, drop: onDrop"
     >
-      <div class="icon">
-        <span class="arrow-icon repo-icon" data-bind="html: arrowIcon"></span>
+      <div class="group-header">
+        <h4 class="group-title" data-bind="text: name"></h4>
+        <div class="group-actions">
+          <button
+            type="button"
+            class="btn btn-default btn-main"
+            data-bind="click: function(groupData) { return $root.renameGroup(groupData); }"
+          >
+            <span data-bind="html: $root.editIcon"></span>
+            Renomear
+          </button>
+          <button
+            type="button"
+            class="btn btn-default btn-main"
+            data-bind="click: function(groupData) { return $root.removeGroup(groupData); }"
+          >
+            Remover
+          </button>
+        </div>
       </div>
-      <div class="content">
-        <h4 class="list-group-item-heading" data-bind="text: projectname"></h4>
-        <p class="list-group-item-text" data-bind="text: title, visible: isListView()"></p>
-        <p class="list-group-item-text repo-link" data-bind="text: remote, visible: isListView()"></p>
+
+      <div class="group-drop-area" data-bind="dropOver: $root.hasGroups, dragEnter: onDragEnter, dragLeave: onDragLeave, drop: onDrop">
+        Arraste e solte aqui para mover para <strong data-bind="text: name"></strong>
       </div>
-      <div class="actions">
-        <button
-          type="button"
-          class="btn btn-default list-item-star"
-          data-bind="html: starEmptyIcon, click: favorite, visible: !isFavorite()"
-        ></button>
-        <button
-          type="button"
-          class="btn btn-default list-item-star"
-          data-bind="html: starFillIcon, click: favorite, visible: isFavorite()"
-        ></button>
-        <button
-          type="button"
-          class="btn btn-default list-item-remove"
-          data-bind="html: removeIcon, click: remove"
-        ></button>
+
+      <div class="list-repos" data-bind="foreach: repos, css: { 'bloco': !$root.isListView() }">
+        <a
+          class="list-group-item repository"
+          data-bind="attr: { href: link }, css: { 'path-removed': pathRemoved, 'is-dragging': isDragging }"
+        >
+          <div
+            class="drag-handle"
+            data-bind="visible: $root.hasGroups, attr: { draggable: $root.hasGroups() }, dragStart: onDragStart, dragEnd: onDragEnd"
+          >
+            <span data-bind="html: dragHandleIcon"></span>
+          </div>
+          <div class="icon">
+            <span class="arrow-icon repo-icon" data-bind="html: arrowIcon"></span>
+          </div>
+          <div class="content">
+            <h4 class="list-group-item-heading" data-bind="text: projectname"></h4>
+            <p class="list-group-item-text" data-bind="text: title, visible: isListView()"></p>
+            <p class="list-group-item-text repo-link" data-bind="text: remote, visible: isListView()"></p>
+          </div>
+          <div class="actions">
+            <button
+              type="button"
+              class="btn btn-default list-item-star"
+              data-bind="html: starEmptyIcon, click: favorite, visible: !isFavorite()"
+            ></button>
+            <button
+              type="button"
+              class="btn btn-default list-item-star"
+              data-bind="html: starFillIcon, click: favorite, visible: isFavorite()"
+            ></button>
+            <button
+              type="button"
+              class="btn btn-default list-item-order"
+              data-bind="html: moveUpIcon, click: moveUp, enable: canMoveUp()"
+            ></button>
+            <button
+              type="button"
+              class="btn btn-default list-item-order"
+              data-bind="html: moveDownIcon, click: moveDown, enable: canMoveDown()"
+            ></button>
+            <button
+              type="button"
+              class="btn btn-default list-item-remove"
+              data-bind="html: removeIcon, click: remove"
+            ></button>
+          </div>
+        </a>
       </div>
-    </a>
+    </div>
   </div>
 
-  <hr class="list-hr"/>
+  <div
+    class="group-section"
+    data-bind="css: { 'drop-active': ungroupedDropActive }, dropOver: hasGroups, dragEnter: onUngroupedDragEnter, dragLeave: onUngroupedDragLeave, drop: onUngroupedDrop"
+  >
+    <div class="group-header">
+      <h4 class="group-title">Sem grupo</h4>
+    </div>
 
-  <div class="list-repos" data-bind="foreach: repos, css: { 'bloco': !isListView() }">
-    <a
-      class="list-group-item repository"
-      data-bind="attr: { href: link }, css: { 'path-removed': pathRemoved }"
-    >
-      <div class="icon">
-        <span class="arrow-icon repo-icon" data-bind="html: arrowIcon"></span>
-      </div>
-      <div class="content">
-        <h4 class="list-group-item-heading" data-bind="text: projectname"></h4>
-        <p class="list-group-item-text" data-bind="text: title, visible: isListView()"></p>
-        <p class="list-group-item-text repo-link" data-bind="text: remote, visible: isListView()"></p>
-      </div>
-      <div class="actions">
-        <button
-          type="button"
-          class="btn btn-default list-item-star"
-          data-bind="html: starEmptyIcon, click: favorite, visible: !isFavorite()"
-        ></button>
-        <button
-          type="button"
-          class="btn btn-default list-item-star"
-          data-bind="html: starFillIcon, click: favorite, visible: isFavorite()"
-        ></button>
-        <button
-          type="button"
-          class="btn btn-default list-item-remove"
-          data-bind="html: removeIcon, click: remove"
-        ></button>
-      </div>
-    </a>
+    <div class="group-drop-area" data-bind="dropOver: hasGroups, dragEnter: onUngroupedDragEnter, dragLeave: onUngroupedDragLeave, drop: onUngroupedDrop">
+      Arraste e solte aqui para mover para <strong>Sem grupo</strong>
+    </div>
+
+    <div class="list-repos" data-bind="foreach: ungroupedRepos, css: { 'bloco': !isListView() }">
+      <a
+        class="list-group-item repository"
+        data-bind="attr: { href: link }, css: { 'path-removed': pathRemoved, 'is-dragging': isDragging }"
+      >
+        <div
+          class="drag-handle"
+          data-bind="visible: $root.hasGroups, attr: { draggable: $root.hasGroups() }, dragStart: onDragStart, dragEnd: onDragEnd"
+        >
+          <span data-bind="html: dragHandleIcon"></span>
+        </div>
+        <div class="icon">
+          <span class="arrow-icon repo-icon" data-bind="html: arrowIcon"></span>
+        </div>
+        <div class="content">
+          <h4 class="list-group-item-heading" data-bind="text: projectname"></h4>
+          <p class="list-group-item-text" data-bind="text: title, visible: isListView()"></p>
+          <p class="list-group-item-text repo-link" data-bind="text: remote, visible: isListView()"></p>
+        </div>
+        <div class="actions">
+          <button
+            type="button"
+            class="btn btn-default list-item-star"
+            data-bind="html: starEmptyIcon, click: favorite, visible: !isFavorite()"
+          ></button>
+          <button
+            type="button"
+            class="btn btn-default list-item-star"
+            data-bind="html: starFillIcon, click: favorite, visible: isFavorite()"
+          ></button>
+          <button
+            type="button"
+            class="btn btn-default list-item-order"
+            data-bind="html: moveUpIcon, click: moveUp, enable: canMoveUp()"
+          ></button>
+          <button
+            type="button"
+            class="btn btn-default list-item-order"
+            data-bind="html: moveDownIcon, click: moveDown, enable: canMoveDown()"
+          ></button>
+          <button
+            type="button"
+            class="btn btn-default list-item-remove"
+            data-bind="html: removeIcon, click: remove"
+          ></button>
+        </div>
+      </a>
+    </div>
   </div>
 
 </div>
