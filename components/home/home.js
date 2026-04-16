@@ -115,6 +115,7 @@ class HomeViewModel {
     this.app = app;
     this.groups = ko.observableArray();
     this.ungroupedRepos = ko.observableArray();
+    this.favoritesRepos = ko.observableArray();
 
     // --- Modal system ---
     this.modal = {
@@ -158,6 +159,7 @@ class HomeViewModel {
     this.importIcon = octicons['upload'].toSVG({ height: 16 });
     this.groupIcon = octicons['repo'].toSVG({ height: 16 });
     this.editIcon = octicons['pencil'].toSVG({ height: 16 });
+    this.starFillIcon = octicons['star-fill'].toSVG({ height: 16 });
     this.groupNameInput = ko.observable('');
     this.importInputElement = ko.observable();
     this.hasGroups = ko.computed(() => this.app.getGroupsAlphabetical().length > 0);
@@ -367,9 +369,20 @@ class HomeViewModel {
       .getUngroupedRepositories()
       .map((path) => this._getOrCreateRepository(path, ''));
 
+    const allPaths = [
+      ...this.app.getGroupsAlphabetical().flatMap((g) => this.app.getRepositoriesByGroup(g)),
+      ...this.app.getUngroupedRepositories(),
+    ];
+    const favoriteRepos = allPaths
+      .filter((path) => this.app.isFavorite(path))
+      .map((path) => this.repositoriesByPath[path])
+      .filter(Boolean)
+      .sort((a, b) => a.projectname.localeCompare(b.projectname));
+
     this.ungroupedDropActive(false);
     this.groups(groups);
     this.ungroupedRepos(ungrouped);
+    this.favoritesRepos(favoriteRepos);
   }
 
   get template() {
