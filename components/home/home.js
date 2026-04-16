@@ -161,6 +161,8 @@ class HomeViewModel {
     this.editIcon = octicons['pencil'].toSVG({ height: 16 });
     this.starFillIcon = octicons['star-fill'].toSVG({ height: 16 });
     this.groupNameInput = ko.observable('');
+    this.isCreatingGroup = ko.observable(false);
+    this.repositoryFilter = ko.observable('');
     this.importInputElement = ko.observable();
     this.hasGroups = ko.computed(() => this.app.getGroupsAlphabetical().length > 0);
     this.groupOptionsWithEmpty = ko.computed(() => [
@@ -174,6 +176,7 @@ class HomeViewModel {
     this.app.repoList.subscribe(() => this.update());
     this.app.repoFavoriteList.subscribe(() => this.update());
     this.app.repoMetadata.subscribe(() => this.update());
+    this.repositoryFilter.subscribe(() => this.update());
   }
 
   _alert(message, title) {
@@ -229,13 +232,32 @@ class HomeViewModel {
     this.update();
   }
 
+  cancelCreateGroup() {
+    this.groupNameInput('');
+    this.isCreatingGroup(false);
+    return false;
+  }
+
   createGroup() {
+    if (!this.isCreatingGroup()) {
+      this.isCreatingGroup(true);
+      return false;
+    }
     const created = this.app.createGroup(this.groupNameInput());
     if (created) {
       this.groupNameInput('');
+      this.isCreatingGroup(false);
       this.update();
     }
     return false;
+  }
+
+  _matchesRepositoryFilter(repository) {
+    const normalizedFilter = this.repositoryFilter().trim().toLowerCase();
+    if (!normalizedFilter) return true;
+    const normalizedPath = (repository.path || '').toLowerCase();
+    const normalizedRemote = (repository.remote() || '').toLowerCase();
+    return normalizedPath.includes(normalizedFilter) || normalizedRemote.includes(normalizedFilter);
   }
 
   renameGroup(groupViewModel) {
@@ -358,16 +380,21 @@ class HomeViewModel {
   }
 
   update() {
-    const groups = this.app.getGroupsAlphabetical().map((groupName) => {
-      const repositories = this.app
-        .getRepositoriesByGroup(groupName)
-        .map((path) => this._getOrCreateRepository(path, groupName));
-      return this._createGroupViewModel(groupName, repositories);
-    });
+    const groups = this.app
+      .getGroupsAlphabetical()
+      .map((groupName) => {
+        const repositories = this.app
+          .getRepositoriesByGroup(groupName)
+          .map((path) => this._getOrCreateRepository(path, groupName))
+          .filter((repository) => this._matchesRepositoryFilter(repository));
+        return this._createGroupViewModel(groupName, repositories);
+      })
+      .filter((groupViewModel) => groupViewModel.repos.length > 0);
 
     const ungrouped = this.app
       .getUngroupedRepositories()
-      .map((path) => this._getOrCreateRepository(path, ''));
+      .map((path) => this._getOrCreateRepository(path, ''))
+      .filter((repository) => this._matchesRepositoryFilter(repository));
 
     const allPaths = [
       ...this.app.getGroupsAlphabetical().flatMap((g) => this.app.getRepositoriesByGroup(g)),
@@ -376,7 +403,7 @@ class HomeViewModel {
     const favoriteRepos = allPaths
       .filter((path) => this.app.isFavorite(path))
       .map((path) => this.repositoriesByPath[path])
-      .filter(Boolean)
+      .filter((repository) => repository && this._matchesRepositoryFilter(repository))
       .sort((a, b) => a.projectname.localeCompare(b.projectname));
 
     this.ungroupedDropActive(false);

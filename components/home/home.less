@@ -67,11 +67,24 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      flex: 1;
-      max-width: 520px;
+      flex-shrink: 0;
 
       .group-icon {
         color: #52616e;
+      }
+
+      input.form-control {
+        width: 240px;
+      }
+    }
+
+    .repo-filter {
+      flex: 1;
+      min-width: 220px;
+      max-width: 540px;
+
+      input.form-control {
+        width: 100%;
       }
     }
 

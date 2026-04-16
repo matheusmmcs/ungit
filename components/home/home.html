@@ -33,6 +33,13 @@
   <div class="config-section">
     <div class="groups-toolbar">
       <div class="group-create">
+        <!-- ko ifnot: isCreatingGroup -->
+        <button type="button" class="btn btn-default btn-main" data-bind="click: createGroup">
+          Criar grupo
+        </button>
+        <!-- /ko -->
+
+        <!-- ko if: isCreatingGroup -->
         <span class="group-icon" data-bind="html: groupIcon"></span>
         <input
           type="text"
@@ -41,8 +48,21 @@
           data-bind="value: groupNameInput, valueUpdate: 'afterkeydown'"
         />
         <button type="button" class="btn btn-default btn-main" data-bind="click: createGroup">
-          Criar grupo
+          Confirmar
         </button>
+        <button type="button" class="btn btn-default" data-bind="click: cancelCreateGroup">
+          Cancelar
+        </button>
+        <!-- /ko -->
+      </div>
+
+      <div class="repo-filter">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Filtrar repositórios por path ou URL git"
+          data-bind="value: repositoryFilter, valueUpdate: 'afterkeydown'"
+        />
       </div>
 
       <div class="options-menu">
