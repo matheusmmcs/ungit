@@ -59,8 +59,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 0;
-    margin-bottom: 12px;
+    margin-top: 10px;
+    margin-bottom: 0;
     gap: 16px;
 
     .group-create {
@@ -75,16 +75,6 @@
 
       input.form-control {
         width: 240px;
-      }
-    }
-
-    .repo-filter {
-      flex: 1;
-      min-width: 220px;
-      max-width: 540px;
-
-      input.form-control {
-        width: 100%;
       }
     }
 
@@ -105,6 +95,43 @@
       .btn-group {
         display: flex;
         gap: 8px;
+      }
+    }
+  }
+
+  .interaction-section {
+    margin-top: 0;
+
+    .interaction-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .repo-filter {
+      flex: 1;
+      min-width: 220px;
+      // max-width: 640px;
+
+      input.form-control {
+        width: 100%;
+      }
+    }
+
+    .interaction-select {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      label {
+        margin: 0;
+        color: #c5d5df;
+        font-size: 13px;
+      }
+
+      select.form-control {
+        width: 160px;
       }
     }
   }

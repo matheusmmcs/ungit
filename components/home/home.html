@@ -1,12 +1,4 @@
 <div class="container home animated fadeInLeft" data-bind="shown: shown">
-  <div class="nux" data-bind="visible: showNux">
-    <img src="images/logo.png" class="logo-large" />
-    <div class="alert alert-info">
-      <h4>Enter a path to a repository to get started!</h4>
-      Then press the <span data-bind="html: addIcon"></span> symbol to make it show up here.
-    </div>
-  </div>
-
   <input
     type="file"
     accept="application/json,.json"
@@ -14,23 +6,27 @@
     data-bind="element: importInputElement, event: { change: importFromFile }"
   />
 
-  <div class="config-section">
-    <div class="config-header">
-      <h4>Configuração</h4>
-      <div class="toolbar-actions">
-        <button type="button" class="btn btn-default btn-main" data-bind="click: exportRepositories">
-          <span data-bind="html: exportIcon"></span>
-          <span>Export</span>
-        </button>
-        <button type="button" class="btn btn-default btn-main" data-bind="click: triggerImport">
-          <span data-bind="html: importIcon"></span>
-          <span>Import</span>
-        </button>
+  <div class="config-section interaction-section">
+    <div class="interaction-toolbar">
+      <div class="repo-filter">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Filtrar repositórios por path ou URL git"
+          data-bind="value: repositoryFilter, valueUpdate: 'afterkeydown'"
+        />
+      </div>
+
+      <div class="interaction-select">
+        <label for="interaction-mode-select">Modo</label>
+        <select
+          id="interaction-mode-select"
+          class="form-control"
+          data-bind="options: interactionModes, value: interactionModeSelected"
+        ></select>
       </div>
     </div>
-  </div>
 
-  <div class="config-section">
     <div class="groups-toolbar">
       <div class="group-create">
         <!-- ko ifnot: isCreatingGroup -->
@@ -56,30 +52,30 @@
         <!-- /ko -->
       </div>
 
-      <div class="repo-filter">
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Filtrar repositórios por path ou URL git"
-          data-bind="value: repositoryFilter, valueUpdate: 'afterkeydown'"
-        />
-      </div>
-
       <div class="options-menu">
         <div class="btn-group">
           <button type="button" class="btn btn-default btn-main" data-bind="visible: isListView(), click: setViewBlock">
             <span data-bind="html: viewBlockIcon"></span>
-            <span>Block</span>
+            <span>Bloco</span>
           </button>
           <button type="button" class="btn btn-default btn-main" data-bind="visible: !isListView(), click: setViewList">
             <span data-bind="html: viewListIcon"></span>
-            <span>List</span>
+            <span>Lista</span>
           </button>
         </div>
       </div>
     </div>
   </div>
   <div class="list-gap"></div>
+
+  <div class="nux" data-bind="visible: showNux">
+    
+    <div class="alert alert-info">
+      <h4>Busque repositórios na barra do topo para iniciar!</h4>
+      <p>Em seguida, aperte o botão <span data-bind="html: addIcon"></span> ao final da barra de endereço para que o repositótio seja exibido aqui.</p>
+      <p>Ou realize uma importação de configurações existentes no botão <span data-bind="html: importIcon"></span> abaixo.</p>
+    </div>
+  </div>
 
   <!-- ko if: favoritesRepos().length > 0 -->
   <div class="group-section favorites-group">
@@ -102,7 +98,7 @@
           <p class="list-group-item-text" data-bind="text: title, visible: isListView()"></p>
           <p class="list-group-item-text repo-link" data-bind="text: remote, visible: isListView()"></p>
         </div>
-        <div class="actions">
+        <div class="actions" data-bind="visible: $root.isEditMode">
           <button
             type="button"
             class="btn btn-default list-item-star"
@@ -126,26 +122,35 @@
     >
       <div class="group-header">
         <h4 class="group-title" data-bind="text: name"></h4>
-        <div class="group-actions">
+        <div class="group-actions" data-bind="visible: $root.isEditMode">
+          <button
+            type="button"
+            class="btn btn-default btn-main"
+            data-bind="html: $root.groupMoveUpIcon, click: function(groupData) { return $root.moveGroupUp(groupData); }, enable: $root.canMoveGroupUp($data)"
+          ></button>
+          <button
+            type="button"
+            class="btn btn-default btn-main"
+            data-bind="html: $root.groupMoveDownIcon, click: function(groupData) { return $root.moveGroupDown(groupData); }, enable: $root.canMoveGroupDown($data)"
+          ></button>
           <button
             type="button"
             class="btn btn-default btn-main"
             data-bind="click: function(groupData) { return $root.renameGroup(groupData); }"
           >
             <span data-bind="html: $root.editIcon"></span>
-            Renomear
           </button>
           <button
             type="button"
             class="btn btn-default btn-main"
             data-bind="click: function(groupData) { return $root.removeGroup(groupData); }"
           >
-            Remover
+            <span data-bind="html: $root.groupRemoveIcon"></span>
           </button>
         </div>
       </div>
 
-      <div class="group-drop-area" data-bind="dropOver: $root.hasGroups, dragEnter: onDragEnter, dragLeave: onDragLeave, drop: onDrop">
+      <div class="group-drop-area" data-bind="visible: repos.length === 0 && $root.isEditMode(), dropOver: $root.hasGroups, dragEnter: onDragEnter, dragLeave: onDragLeave, drop: onDrop">
         Arraste e solte aqui para mover para <strong data-bind="text: name"></strong>
       </div>
 
@@ -156,7 +161,7 @@
         >
           <div
             class="drag-handle"
-            data-bind="visible: $root.hasGroups, attr: { draggable: $root.hasGroups() }, dragStart: onDragStart, dragEnd: onDragEnd"
+            data-bind="visible: $root.hasGroups() && $root.isEditMode(), attr: { draggable: $root.hasGroups() && $root.isEditMode() }, dragStart: onDragStart, dragEnd: onDragEnd"
           >
             <span data-bind="html: dragHandleIcon"></span>
           </div>
@@ -168,7 +173,7 @@
             <p class="list-group-item-text" data-bind="text: title, visible: isListView()"></p>
             <p class="list-group-item-text repo-link" data-bind="text: remote, visible: isListView()"></p>
           </div>
-          <div class="actions">
+          <div class="actions" data-bind="visible: $root.isEditMode">
             <button
               type="button"
               class="btn btn-default list-item-star"
@@ -208,7 +213,7 @@
       <h4 class="group-title">Sem grupo</h4>
     </div>
 
-    <div class="group-drop-area" data-bind="dropOver: hasGroups, dragEnter: onUngroupedDragEnter, dragLeave: onUngroupedDragLeave, drop: onUngroupedDrop">
+    <div class="group-drop-area" data-bind="visible: ungroupedRepos().length === 0 && isEditMode(), dropOver: hasGroups, dragEnter: onUngroupedDragEnter, dragLeave: onUngroupedDragLeave, drop: onUngroupedDrop">
       Arraste e solte aqui para mover para <strong>Sem grupo</strong>
     </div>
 
@@ -219,7 +224,7 @@
       >
         <div
           class="drag-handle"
-          data-bind="visible: $root.hasGroups, attr: { draggable: $root.hasGroups() }, dragStart: onDragStart, dragEnd: onDragEnd"
+          data-bind="visible: $root.hasGroups() && $root.isEditMode(), attr: { draggable: $root.hasGroups() && $root.isEditMode() }, dragStart: onDragStart, dragEnd: onDragEnd"
         >
           <span data-bind="html: dragHandleIcon"></span>
         </div>
@@ -231,7 +236,7 @@
           <p class="list-group-item-text" data-bind="text: title, visible: isListView()"></p>
           <p class="list-group-item-text repo-link" data-bind="text: remote, visible: isListView()"></p>
         </div>
-        <div class="actions">
+        <div class="actions" data-bind="visible: $root.isEditMode">
           <button
             type="button"
             class="btn btn-default list-item-star"
@@ -259,6 +264,22 @@
           ></button>
         </div>
       </a>
+    </div>
+  </div>
+
+  <div class="config-section">
+    <div class="config-header">
+      <h4>Configuração</h4>
+      <div class="toolbar-actions">
+        <button type="button" class="btn btn-default btn-main" data-bind="click: exportRepositories">
+          <span data-bind="html: exportIcon"></span>
+          <span>Export</span>
+        </button>
+        <button type="button" class="btn btn-default btn-main" data-bind="click: triggerImport">
+          <span data-bind="html: importIcon"></span>
+          <span>Import</span>
+        </button>
+      </div>
     </div>
   </div>
 

@@ -139,7 +139,7 @@ class AppViewModel {
       orders[groupKey] = [...currentOrder, ...missingMembers];
     });
 
-    const sortedGroups = [...uniqueGroups].sort((a, b) => a.localeCompare(b));
+    const sortedGroups = [...uniqueGroups];
     const flattenedRepositories = [];
     sortedGroups.forEach((groupName) => {
       flattenedRepositories.push(...orders[groupName]);
@@ -263,7 +263,29 @@ class AppViewModel {
   getGroupsAlphabetical() {
     const metadata = this.repoMetadata() || {};
     const groups = Array.isArray(metadata.groups) ? metadata.groups : [];
-    return [...groups].sort((a, b) => a.localeCompare(b));
+    return [...groups];
+  }
+
+  canMoveGroup(groupName, direction) {
+    const groups = this.getGroupsAlphabetical();
+    const currentIndex = groups.indexOf(groupName);
+    if (currentIndex === -1) return false;
+    const nextIndex = currentIndex + direction;
+    return nextIndex >= 0 && nextIndex < groups.length;
+  }
+
+  moveGroup(groupName, direction) {
+    if (!this.canMoveGroup(groupName, direction)) return false;
+    const metadata = this.repoMetadata() || {};
+    const groups = this.getGroupsAlphabetical();
+    const currentIndex = groups.indexOf(groupName);
+    const nextIndex = currentIndex + direction;
+    [groups[currentIndex], groups[nextIndex]] = [groups[nextIndex], groups[currentIndex]];
+    this._saveNormalizedRepositoryState(this.repoList(), this.repoFavoriteList(), {
+      ...metadata,
+      groups,
+    });
+    return true;
   }
 
   getRepositoriesByGroup(groupName) {

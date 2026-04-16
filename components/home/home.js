@@ -10,6 +10,11 @@ const TYPES_VIEW = {
   block: 'Block'
 };
 
+const INTERACTION_MODES = {
+  view: 'Visualizar',
+  edit: 'Editar'
+};
+
 class HomeRepositoryViewModel {
   constructor(home, path, groupName) {
     this.home = home;
@@ -153,13 +158,19 @@ class HomeViewModel {
     this.addIcon = octicons.plus.toSVG({ height: 18 });
     this.typeViews = Object.values(TYPES_VIEW);
     this.typeViewSelected = ko.observable(TYPES_VIEW.block);
+    this.interactionModes = Object.values(INTERACTION_MODES);
+    this.interactionModeSelected = ko.observable(INTERACTION_MODES.view);
+    this.isEditMode = ko.computed(() => this.interactionModeSelected() === INTERACTION_MODES.edit);
     this.viewBlockIcon = octicons['apps'].toSVG({ height: 24 });
     this.viewListIcon = octicons['list-unordered'].toSVG({ height: 24 });
     this.exportIcon = octicons['download'].toSVG({ height: 16 });
     this.importIcon = octicons['upload'].toSVG({ height: 16 });
     this.groupIcon = octicons['repo'].toSVG({ height: 16 });
     this.editIcon = octicons['pencil'].toSVG({ height: 16 });
+    this.groupRemoveIcon = octicons['x-circle'].toSVG({ height: 16 });
     this.starFillIcon = octicons['star-fill'].toSVG({ height: 16 });
+    this.groupMoveUpIcon = octicons['arrow-up'].toSVG({ height: 14 });
+    this.groupMoveDownIcon = octicons['arrow-down'].toSVG({ height: 14 });
     this.groupNameInput = ko.observable('');
     this.isCreatingGroup = ko.observable(false);
     this.repositoryFilter = ko.observable('');
@@ -343,6 +354,26 @@ class HomeViewModel {
     if (!draggedRepository || !draggedRepository.path) return;
     this.app.setRepositoryGroup(draggedRepository.path, '');
     this.update();
+  }
+
+  canMoveGroupUp(groupViewModel) {
+    return this.app.canMoveGroup(groupViewModel.name, -1);
+  }
+
+  canMoveGroupDown(groupViewModel) {
+    return this.app.canMoveGroup(groupViewModel.name, 1);
+  }
+
+  moveGroupUp(groupViewModel) {
+    this.app.moveGroup(groupViewModel.name, -1);
+    this.update();
+    return false;
+  }
+
+  moveGroupDown(groupViewModel) {
+    this.app.moveGroup(groupViewModel.name, 1);
+    this.update();
+    return false;
   }
 
   _createGroupViewModel(groupName, repositories) {
