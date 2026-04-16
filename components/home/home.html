@@ -203,5 +203,33 @@
       </a>
     </div>
   </div>
+  <!-- Custom modal -->
+  <div class="home-modal-overlay" data-bind="visible: modal.visible">
+    <div class="home-modal">
+      <div class="home-modal-header">
+        <h4 data-bind="text: modal.title"></h4>
+      </div>
+      <div class="home-modal-body">
+        <p data-bind="text: modal.message"></p>
+        <input
+          type="text"
+          class="form-control"
+          data-bind="visible: modal.type() === 'prompt', value: modal.inputValue, valueUpdate: 'afterkeydown'"
+        />
+      </div>
+      <div class="home-modal-footer">
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-bind="click: modal.ok"
+        >OK</button>
+        <button
+          type="button"
+          class="btn btn-default"
+          data-bind="visible: modal.type() !== 'alert', click: modal.cancel"
+        >Cancelar</button>
+      </div>
+    </div>
+  </div>
 
 </div>

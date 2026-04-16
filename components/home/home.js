@@ -115,6 +115,37 @@ class HomeViewModel {
     this.app = app;
     this.groups = ko.observableArray();
     this.ungroupedRepos = ko.observableArray();
+
+    // --- Modal system ---
+    this.modal = {
+      visible: ko.observable(false),
+      type: ko.observable('alert'), // 'alert' | 'confirm' | 'prompt'
+      title: ko.observable(''),
+      message: ko.observable(''),
+      inputValue: ko.observable(''),
+      _resolve: null,
+    };
+    this.modal.ok = () => {
+      const resolve = this.modal._resolve;
+      this.modal.visible(false);
+      this.modal._resolve = null;
+      if (resolve) {
+        if (this.modal.type() === 'confirm') resolve(true);
+        else if (this.modal.type() === 'prompt') resolve(this.modal.inputValue());
+        else resolve();
+      }
+    };
+    this.modal.cancel = () => {
+      const resolve = this.modal._resolve;
+      this.modal.visible(false);
+      this.modal._resolve = null;
+      if (resolve) {
+        if (this.modal.type() === 'confirm') resolve(false);
+        else if (this.modal.type() === 'prompt') resolve(null);
+        else resolve();
+      }
+    };
+    // --- end modal system ---
     this.repositoriesByPath = {};
     this.showNux = ko.computed(() => this.app.repoList().length == 0);
     this.ungroupedDropActive = ko.observable(false);
@@ -141,6 +172,39 @@ class HomeViewModel {
     this.app.repoList.subscribe(() => this.update());
     this.app.repoFavoriteList.subscribe(() => this.update());
     this.app.repoMetadata.subscribe(() => this.update());
+  }
+
+  _alert(message, title) {
+    return new Promise((resolve) => {
+      this.modal.type('alert');
+      this.modal.title(title || 'Atenção');
+      this.modal.message(message);
+      this.modal.inputValue('');
+      this.modal._resolve = resolve;
+      this.modal.visible(true);
+    });
+  }
+
+  _confirm(message, title) {
+    return new Promise((resolve) => {
+      this.modal.type('confirm');
+      this.modal.title(title || 'Confirmação');
+      this.modal.message(message);
+      this.modal.inputValue('');
+      this.modal._resolve = resolve;
+      this.modal.visible(true);
+    });
+  }
+
+  _prompt(message, defaultValue, title) {
+    return new Promise((resolve) => {
+      this.modal.type('prompt');
+      this.modal.title(title || 'Entrada');
+      this.modal.message(message);
+      this.modal.inputValue(defaultValue || '');
+      this.modal._resolve = resolve;
+      this.modal.visible(true);
+    });
   }
 
   isListView() {
@@ -173,20 +237,23 @@ class HomeViewModel {
   }
 
   renameGroup(groupViewModel) {
-    const newName = window.prompt('Novo nome do grupo:', groupViewModel.name);
-    if (!newName) return false;
-    this.app.renameGroup(groupViewModel.name, newName);
-    this.update();
+    this._prompt('Novo nome do grupo:', groupViewModel.name, 'Renomear grupo').then((newName) => {
+      if (!newName) return;
+      this.app.renameGroup(groupViewModel.name, newName);
+      this.update();
+    });
     return false;
   }
 
   removeGroup(groupViewModel) {
-    const shouldRemove = window.confirm(
-      `Remover o grupo "${groupViewModel.name}"? Os repositórios irão para Sem grupo.`
-    );
-    if (!shouldRemove) return false;
-    this.app.removeGroup(groupViewModel.name);
-    this.update();
+    this._confirm(
+      `Remover o grupo "${groupViewModel.name}"? Os repositórios irão para Sem grupo.`,
+      'Remover grupo'
+    ).then((shouldRemove) => {
+      if (!shouldRemove) return;
+      this.app.removeGroup(groupViewModel.name);
+      this.update();
+    });
     return false;
   }
 
@@ -214,22 +281,25 @@ class HomeViewModel {
     const selectedFile = event && event.target && event.target.files ? event.target.files[0] : null;
     if (!selectedFile) return true;
 
-    const modeHint = window.prompt(
-      'Digite M para Mesclar ou R para Substituir os dados atuais:',
-      'M'
-    );
-    if (!modeHint) return true;
-    const mode = modeHint.toLowerCase().startsWith('r') ? 'replace' : 'merge';
-
     const reader = new FileReader();
     reader.onload = () => {
+      let payload;
       try {
-        const payload = JSON.parse(reader.result);
+        payload = JSON.parse(reader.result);
+      } catch {
+        this._alert('Arquivo JSON inválido para importação.', 'Erro');
+        return;
+      }
+      this._prompt(
+        'Digite M para Mesclar ou R para Substituir os dados atuais:',
+        'M',
+        'Modo de importação'
+      ).then((modeHint) => {
+        if (!modeHint) return;
+        const mode = modeHint.toLowerCase().startsWith('r') ? 'replace' : 'merge';
         this.app.importRepositoriesData(payload, mode);
         this.update();
-      } catch {
-        window.alert('Arquivo JSON invalido para importacao.');
-      }
+      });
     };
     reader.readAsText(selectedFile);
     return true;
